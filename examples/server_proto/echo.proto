@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package Common;
+
+message EchoRequest {
+	optional string msg = 1;
+};
+
+message EchoResponse {
+	optional string msg = 1;
+};
