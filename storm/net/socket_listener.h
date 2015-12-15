@@ -43,7 +43,7 @@ public:
 
 	virtual bool initialize() {return true;}
 
-	virtual void doClose(NetPacket::ptr pack) {LOG("doClose\n");}
+	virtual void doClose(NetPacket::ptr pack) {}
 
 	//自定义协议重载doRequest
 	virtual void doRequest(NetPacket::ptr pack);
