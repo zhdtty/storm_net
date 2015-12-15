@@ -103,9 +103,9 @@ void SocketClient::doClose(RecvPacket::ptr pack) {
 		m_reqMessages.erase(it++);
 
 		mess->status = RespStatus_Error;
-		if (pack->closeType == Timeout_Close) {
+		if (pack->closeType == CloseType_Timeout) {
 			mess->status = RespStatus_TimeOut;
-		} else if (pack->closeType == Connect_Error) {
+		} else if (pack->closeType == CloseType_ConnectFail) {
 			mess->status = RespStatus_UnReachableHost;
 		}
 		mess->proxy->finishInvoke(mess);

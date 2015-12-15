@@ -3,14 +3,14 @@
 
 #include <list>
 #include <stdint.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace Storm {
 template <typename T>
 class ObjectPool {
 public:
-	typedef boost::shared_ptr<T> Tptr;
-	ObjectPool(uint32_t iNodeNum = 1024):m_iNodeNum(iNodeNum) {
+	typedef std::shared_ptr<T> Tptr;
+	ObjectPool(uint32_t iNodeNum = 128):m_iNodeNum(iNodeNum) {
 		expandNode();
 	}
 

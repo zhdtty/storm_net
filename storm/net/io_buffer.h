@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "util/noncopyable.h"
 
@@ -17,7 +17,7 @@ using namespace std;
 namespace Storm {
 class IOBuffer : public noncopyable {
 public:
-	typedef boost::shared_ptr<IOBuffer> ptr;
+	typedef std::shared_ptr<IOBuffer> ptr;
 
 	IOBuffer(uint32_t initSize = 128)
 		:m_capacity(initSize)
@@ -66,6 +66,10 @@ public:
 
 	inline uint32_t getAllRemaingSize() {
 		return m_capacity - getSize();
+	}
+
+	inline uint32_t getCapacity() {
+		return m_capacity;
 	}
 
 	inline void reset() {

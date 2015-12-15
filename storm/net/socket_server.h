@@ -35,7 +35,7 @@ public:
 	void poll();
 
 	void send(int id, IOBuffer::ptr buffer);
-	void close(int id);
+	void close(int id, uint32_t closeType = CloseType_Server);
 	void terminate();
 	bool isTerminate() { return m_exit; }
 
@@ -48,7 +48,7 @@ public:
 private:
     int reserveId();
 	void exit();
-    void forceClose(Socket* pSocket, int closeType = Server_Close);
+    void forceClose(Socket* pSocket, int closeType = CloseType_Server);
 	inline void pushCmd(const SocketCmd& cmd);
 
 	Socket* getNewSocket();
@@ -62,7 +62,7 @@ private:
 	// 请求处理
 	void handleCmd();
 	void sendSocket(int id, IOBuffer::ptr buffer);
-	void closeSocket(int id);
+	void closeSocket(int id, uint32_t closeType);
 
 private:
 	bool m_exit;
@@ -77,8 +77,7 @@ private:
 
 	ObjectPool<IOBuffer> m_bufferPool;
 
-	map<string, SocketHandle::ptr>		m_handles;
-	map<string, SocketListener::ptr>	m_listeners;
+	map<string, SocketHandler::ptr>		m_handlers;
 
     char m_buffer[MAX_INFO];
 	std::thread m_netThread;
@@ -86,50 +85,36 @@ private:
 
 template<typename T>
 bool SocketServer::addListener(const ServiceConfig& cfg) {
-	const string& handleName = cfg.group;
 	const string& listenerName = cfg.serviceName;
-	map<string, SocketHandle::ptr>::iterator itHandle = m_handles.find(handleName);
-	SocketHandle::ptr handle;
-	if (itHandle != m_handles.end()) {
-		handle = itHandle->second;
-	} else {
-		handle.reset(new SocketHandle);
-		handle->m_handleName = handleName;
-		handle->m_threadNum = cfg.threadNum;
-		m_handles.insert(make_pair(handleName, handle));
-	}
 
-	map<string, SocketListener::ptr>::iterator itListen = m_listeners.find(listenerName);
-	if (itListen != m_listeners.end()) {
-		LOG("duplicate listener name: %s\n", listenerName.c_str());
+	map<string, SocketHandler::ptr>::iterator it = m_handlers.find(listenerName);
+	if (it != m_handlers.end()) {
+		LOG("duplicate listener listenerName: %s\n", listenerName.c_str());
 		return false;
 	}
-	SocketListener::ptr listener(new T);
-	listener->m_listenerName = cfg.serviceName;
-	listener->m_host = cfg.host;
-	listener->m_port = cfg.port;
-	listener->m_handle = handle.get();
-	listener->m_sockServer = this;
-
-	m_listeners.insert(make_pair(listenerName, listener));
-	handle->addListener(listenerName, listener);
+	SocketHandler::ptr handler(new SocketHandler);
+	if (!handler->setListener<T>(this, cfg)) {
+		LOG("setListener error\n");
+		return false;
+	}
+	m_handlers.insert(make_pair(listenerName, handler));
 
 	//监听
-	int fd = socketListen(listener->m_host.c_str(), listener->m_port, 1024);
+	int fd = socketListen(cfg.host.c_str(), cfg.port, 1024);
 	if (fd < 0) {
-		LOG("error when bind %s\n", listener->m_listenerName.c_str());
+		LOG("error when bind %s\n", listenerName.c_str());
 		return false;
 	}
 	Socket* s = getNewSocket();
 	if (s == NULL) {
-		LOG("error when getSocket %s\n", listener->m_listenerName.c_str());
+		LOG("error when getSocket %s\n", listenerName.c_str());
 		return false;
 	}
 
 	s->fd = fd;
 	s->type = Socket_Type_Listen;
 	s->status = Socket_Status_Listen;
-	s->listener = listener.get();
+	s->handler = handler.get();
 	m_poll.addToRead(fd, s);
 
 	LOG("start %s, host: %s, port: %d\n", listenerName.c_str(), cfg.host.c_str(), cfg.port);

@@ -148,6 +148,7 @@ void SocketConnector::forceClose(Socket* s, int closeType) {
 
 	//把读写缓存放回缓存池
 	if (s->readBuffer) {
+		s->readBuffer->reset();
 		m_bufferPool.put(s->readBuffer);
 		s->readBuffer.reset();
 	}
@@ -229,7 +230,7 @@ void SocketConnector::sendSocket(int id, IOBuffer::ptr buffer) {
 		}
 	}
 	if (needClose) {
-		forceClose(s, Server_Close);
+		forceClose(s, CloseType_Server);
 	} else if (remainSize != 0) {
 		s->writeBuffer.push_back(buffer);
 	}
@@ -278,7 +279,7 @@ void SocketConnector::connectSocket(Socket* s) {
 	if (!success) {
 		LOG("socket-server: connect socket error\n");
 		s->status = Socket_Status_Reserve;
-		s->client->onClose(Connect_Error);
+		s->client->onClose(CloseType_ConnectFail);
 	}
 }
 
@@ -287,7 +288,7 @@ void SocketConnector::closeSocket(int id) {
 	if (s == NULL || s->status == Socket_Status_Idle) {
 		return;
 	}
-	forceClose(s, Client_Close);
+	forceClose(s, CloseType_Client);
 }
 
 void SocketConnector::handleConnect(Socket* s)
@@ -297,7 +298,7 @@ void SocketConnector::handleConnect(Socket* s)
     int iCode = getsockopt(s->fd, SOL_SOCKET, SO_ERROR, &iError, &iLen);
     if (iCode < 0 || iError) {
 		LOG("connect error: %s.\n", strerror(iError));
-        forceClose(s, Connect_Error);
+        forceClose(s, CloseType_ConnectFail);
 		return;
     }
 	s->status = Socket_Status_Connected;
@@ -344,7 +345,7 @@ void SocketConnector::handleRead(Socket* s) {
 		}
 	}
 	if (needClose) {
-		forceClose(s, Server_Close);
+		forceClose(s, CloseType_Server);
 	} else {
 		s->client->onData(buffer);
 	}
@@ -391,7 +392,7 @@ void SocketConnector::handleWrite(Socket* s) {
 	}
 
 	if (needClose) {
-		forceClose(s, Server_Close);
+		forceClose(s, CloseType_Server);
 	}
 }
 

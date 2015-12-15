@@ -25,7 +25,6 @@ protected:
 		if (it == allService.end()) {
 			throw std::runtime_error("cannot find service config, service: " + serviceName);
 		}
-		it->second.threadNum = m_handleThreadNum[it->second.group];
 		bool suc = m_sockServer->addListener<T>(it->second);
 		if (suc == false) {
 			exit(0);
@@ -45,7 +44,6 @@ protected:
 	ServerConfig m_config;
 	static SocketServer* m_sockServer;
 	static SocketConnector* m_connector;
-	map<string, uint32_t> m_handleThreadNum;
 };
 }
 

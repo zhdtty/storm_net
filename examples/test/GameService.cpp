@@ -7,13 +7,16 @@ uint64_t g_time = 0;
 uint32_t g_count = 0;
 
 void GameService::doClose(NetPacket::ptr pack) {
-	LOG("doClose\n");
+	LOG("doClose id %d fd %d\n", pack->id, pack->fd);
 }
 
+//TODO 返回错误码应该是业务层的
 int GameService::doRpcRequest(NetPacket::ptr pack, const RpcRequest& req, RpcResponse& resp) {
+	/*
 	LOG("proto id %d\n", req.proto_id());
 	LOG("requestId %d\n", req.request_id());
 	LOG("invokeType %d\n", req.invoke_type());
+	*/
 
 	switch (req.proto_id()) {
 		case 1:
@@ -45,13 +48,14 @@ int GameService::doRpcRequest(NetPacket::ptr pack, const RpcRequest& req, RpcRes
 		uint32_t count = g_count  * 1000 / (t - g_time);
 		g_time  = t;
 		LOG("tqs %d\n", count);
+		showLen();
 		g_count = 0;
 	}
 	return 0;
 }
 
 int GameService::Echo(NetPacket::ptr pack, const EchoRequest& request, EchoResponse& resp) {
-	LOG("echo %s\n", request.msg().c_str());
+	//LOG("echo %s\n", request.msg().c_str());
 	resp.set_msg(request.msg());
 	return 0;
 }

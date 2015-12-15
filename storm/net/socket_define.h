@@ -5,10 +5,11 @@
 
 namespace Storm {
 
-typedef boost::function<int (IOBuffer::ptr, string&)> ProtocolType;
+typedef std::function<int (IOBuffer::ptr, string&)> ProtocolType;
 
 class SocketListener;
 class SocketClient;
+class SocketHandler;
 
 enum Socket_Type {
 	Socket_Type_Listen,		//监听
@@ -25,11 +26,13 @@ enum Socket_Status {
 	Socket_Status_Connected, 	//已连接
 };
 
-enum Socket_Close_Type {
-	Server_Close,
-	Client_Close,
-	Timeout_Close,
-	Connect_Error,
+enum Socket_CloseType {
+	CloseType_Server = 0,	//服务器主动断开
+	CloseType_Client = 1,   //客户端主动断开
+	CloseType_Timeout = 2,  //超时
+	CloseType_EmptyTimeout = 3, //空连接超时
+	CloseType_Packet_Error = 4, //协议包出错
+	CloseType_ConnectFail = 5, //连接失败
 };
 
 enum Socket_Cmd_Type {
@@ -41,19 +44,20 @@ enum Socket_Cmd_Type {
 };
 
 struct SocketCmd {
-	SocketCmd(): type(Socket_Cmd_Listen), id(0) {}
+	SocketCmd(): type(Socket_Cmd_Listen), id(0), closeType(CloseType_Server) {}
 	int type;
 	int	id;
+	int closeType;
 	IOBuffer::ptr buffer;
 };
 
 struct Socket {
-	Socket():id(0), fd(-1), status(Socket_Status_Idle), listener(NULL), client(NULL) {}
+	Socket():id(0), fd(-1), status(Socket_Status_Idle), handler(NULL), client(NULL) {}
 	int id;
 	int fd;
 	int type;
 	int status;
-	SocketListener* listener;
+	SocketHandler* handler;
 	SocketClient* client;
 	string ip;
 	int port;

@@ -9,8 +9,9 @@ struct ServiceConfig {
 	uint32_t threadNum;
 	uint32_t maxConnections;
 	uint32_t maxQueueLen;
+	uint32_t keepAliveTime;
+	uint32_t emptyConnTimeOut;
 	uint32_t queueTimeout;
-	string  group;
 };
 
 struct ServerConfig {

@@ -11,7 +11,7 @@ Server g_server;
 bool Server::initialize() {
 	m_count = 0;
 	addService<GameService>("GameService");
-	addService<SocketListener>("EchoService1");
+	//addService<SocketListener>("EchoService1");
 
 	return true;
 }

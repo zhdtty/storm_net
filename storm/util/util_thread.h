@@ -4,9 +4,9 @@
 #include <list>
 #include <stdint.h>
 #include <pthread.h>
+#include <memory>
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
 
 namespace Storm
 {
@@ -79,7 +79,7 @@ private:
 
 class Thread : public boost::noncopyable {
 public:
-	typedef boost::shared_ptr<Thread> ptr;
+	typedef std::shared_ptr<Thread> ptr;
 	Thread():m_bRunning(false) {}
 	void start(boost::function<void (void) > entry);
 	void join();
@@ -134,6 +134,7 @@ public:
 
 	uint32_t size()
 	{
+		ScopeMutex<Notifier> lock(m_notifier);
 		return m_list.size();
 	}
 

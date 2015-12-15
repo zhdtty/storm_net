@@ -59,8 +59,8 @@ void SocketServer::exit() {
 		}
     }
 
-	for (map<string, SocketHandle::ptr>::iterator it = m_handles.begin(); it != m_handles.end(); ++it) {
-		SocketHandle::ptr handle = it->second;
+	for (map<string, SocketHandler::ptr>::iterator it = m_handlers.begin(); it != m_handlers.end(); ++it) {
+		SocketHandler::ptr handle = it->second;
 		handle->terminate();
 	}
 	m_exit = true;
@@ -107,12 +107,14 @@ void SocketServer::forceClose(Socket* s, int closeType) {
 
 	//通知
 	if (s->type == Socket_Type_FromOut) {
-		s->listener->onClose(s->id, s->fd, s->ip, s->port, closeType);
+		s->handler->onClose(s->id, s->fd, s->ip, s->port, closeType);
 	}
 
 	//把读写缓存放回缓存池
 	if (s->readBuffer) {
+		s->readBuffer->reset();
 		m_bufferPool.put(s->readBuffer);
+		//LOG("put to pool %d\n", s->readBuffer->getCapacity());
 		s->readBuffer.reset();
 	}
 	for (list<IOBuffer::ptr>::iterator it = s->writeBuffer.begin(); it != s->writeBuffer.end(); ) {
@@ -122,6 +124,7 @@ void SocketServer::forceClose(Socket* s, int closeType) {
 	//关闭
 	m_poll.del(s->fd);
 	::close(s->fd);
+	//LOG("close fd %d %d\n", s->id, s->fd);
 	s->status = Socket_Status_Idle;
 }
 
@@ -151,7 +154,7 @@ void SocketServer::handleAccept(Socket* s) {
 		ns->fd = connFd;
 		ns->type = Socket_Type_FromOut;
 		ns->status = Socket_Status_Connected;
-		ns->listener = s->listener;
+		ns->handler = s->handler;
 
     	socketKeepAlive(connFd);
 		socketNonBlock(connFd);
@@ -163,7 +166,7 @@ void SocketServer::handleAccept(Socket* s) {
 		ns->ip = m_buffer;
 		ns->port = ntohs(sa.sin_port);
 
-		ns->listener->onAccept(ns->id, ns->fd, ns->ip, ns->port);
+		ns->handler->onAccept(ns->id, ns->fd, ns->ip, ns->port);
 	}
 }
 
@@ -173,6 +176,7 @@ void SocketServer::handleRead(Socket* s) {
 	}
 	if (!s->readBuffer) {
 		s->readBuffer = m_bufferPool.get();
+		//LOG("new buffer size %d %d\n", s->readBuffer->getSize(), s->readBuffer->getCapacity());
 	}
 	IOBuffer::ptr buffer = s->readBuffer;
 
@@ -186,6 +190,7 @@ void SocketServer::handleRead(Socket* s) {
 		maxSize = buffer->getRemainingSize();
 		int readSize = ::read(s->fd, buffer->getTail(), maxSize);
 		if (readSize == 0) {
+			//LOG("cliet close\n");
 			needClose = true;
 			break;
 		} else if (readSize < 0) {
@@ -203,9 +208,9 @@ void SocketServer::handleRead(Socket* s) {
 		}
 	}
 	if (needClose) {
-		forceClose(s, Client_Close);
+		forceClose(s, CloseType_Client);
 	} else if (s->type == Socket_Type_FromOut) {
-		s->listener->onData(s->id, s->fd, s->ip, s->port, buffer);
+		s->handler->onData(s->id, s->fd, s->ip, s->port, buffer);
 	}
 }
 
@@ -231,6 +236,7 @@ void SocketServer::handleWrite(Socket* s) {
 		sendSize = ::write(s->fd, d, size);
 		if (sendSize == 0) {
 			needClose = true;
+			//LOG("cliet close\n");
 			break;
 		} else if (sendSize < 0) {
 			if (errno == EAGAIN) {	//不能再写了
@@ -238,6 +244,7 @@ void SocketServer::handleWrite(Socket* s) {
 			} else if (errno == EINTR) {
 				continue;
 			} else {
+				LOG("send error fd: %d error:%s\n", s->fd, strerror(errno));
 				needClose = true;
 				break;
 			}
@@ -250,16 +257,13 @@ void SocketServer::handleWrite(Socket* s) {
 	}
 
 	if (needClose) {
-		forceClose(s, Client_Close);
+		forceClose(s, CloseType_Client);
 	}
 }
 
 void SocketServer::poll() {
 	while (!m_exit) {
-		int num = m_poll.wait(m_event, MAX_EVENT);
-		if (num <= 0) {
-			continue ;
-		}
+		int num = m_poll.wait(m_event, MAX_EVENT, 100);
 		for (int i = 0; i < num; ++i) {
 			SocketEvent* event = &m_event[i];
 			Socket* s = (Socket*)(event->pUd);
@@ -285,6 +289,12 @@ void SocketServer::poll() {
 					break;
 			}
 		}
+
+		//
+		for (map<string, SocketHandler::ptr>::iterator it = m_handlers.begin(); it != m_handlers.end(); ++it) {
+			SocketHandler::ptr handle = it->second;
+			handle->checkTimeOut();
+		}
 	}
 }
 
@@ -299,7 +309,7 @@ void SocketServer::handleCmd() {
 				sendSocket(cmd.id, cmd.buffer);
 				break;
 			case Socket_Cmd_Close:
-				closeSocket(cmd.id);
+				closeSocket(cmd.id, cmd.closeType);
 				break;
 			case Socket_Cmd_Exit:
 				exit();
@@ -324,6 +334,7 @@ void SocketServer::sendSocket(int id, IOBuffer::ptr buffer) {
 			int sendSize = ::write(s->fd, sendBuf, remainSize);
 			if (sendSize == 0) {
 				needClose = true;
+				//LOG("cliet close\n");
 				break;
 			} else if (sendSize < 0) {
 				if (errno == EAGAIN) {	//不能再写了
@@ -332,6 +343,7 @@ void SocketServer::sendSocket(int id, IOBuffer::ptr buffer) {
 				} else if (errno == EINTR) {
 					continue;
 				} else {
+					LOG("send error fd: %d error:%s\n", s->fd, strerror(errno));
 					needClose = true;
 					break;
 				}
@@ -343,26 +355,26 @@ void SocketServer::sendSocket(int id, IOBuffer::ptr buffer) {
 		}
 	}
 	if (needClose) {
-		forceClose(s, Client_Close);
+		forceClose(s, CloseType_Client);
 	} else if (remainSize != 0) {
 		s->writeBuffer.push_back(buffer);
 	}
 }
 
-void SocketServer::closeSocket(int id) {
+void SocketServer::closeSocket(int id, uint32_t closeType) {
 	Socket* s = getSocket(id);
 	if (s == NULL || s->status == Socket_Status_Idle) {
 		return;
 	}
-	forceClose(s, Server_Close);
+	forceClose(s, closeType);
 }
 
 void SocketServer::start() {
 	m_netThread = std::thread(&SocketServer::poll, this);
 
 	LOG("start\n");
-	for (map<string, SocketHandle::ptr>::iterator it = m_handles.begin(); it != m_handles.end(); ++it) {
-		SocketHandle::ptr handle = it->second;
+	for (map<string, SocketHandler::ptr>::iterator it = m_handlers.begin(); it != m_handlers.end(); ++it) {
+		SocketHandler::ptr handle = it->second;
 		handle->start();
 	}
 }
@@ -376,10 +388,11 @@ void SocketServer::send(int id, IOBuffer::ptr buffer) {
 	pushCmd(cmd);
 }
 
-void SocketServer::close(int id) {
+void SocketServer::close(int id, uint32_t closeType) {
 	SocketCmd cmd;
 	cmd.id = id;
 	cmd.type = Socket_Cmd_Close;
+	cmd.closeType = closeType;
 
 	pushCmd(cmd);
 }

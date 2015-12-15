@@ -58,7 +58,7 @@ public:
 private:
     int reserveId();
 	void exit();
-    void forceClose(Socket* pSocket, int closeType = Client_Close);
+    void forceClose(Socket* pSocket, int closeType = CloseType_Client);
 
 	inline Socket* getNewSocket();
 	inline Socket* getSocket(int id);

@@ -15,8 +15,10 @@ namespace Storm {
 
 const static uint32_t kDefaultThreadNum = 1;
 const static uint32_t kDefaultConnections = 65535;
-const static uint32_t kDefaultQueueLen = 1000000;
-const static uint32_t kDefaultTimeOut = 3000;
+const static uint32_t kDefaultQueueLen = 100000;
+const static uint32_t kEmptyTimeOut = 15;
+const static uint32_t kDefaultKeepAliveTime = 60;
+const static uint32_t kDefaultTimeOut = 60;
 
 SocketServer* Application::m_sockServer = new SocketServer();
 SocketConnector* Application::m_connector = new SocketConnector();
@@ -109,11 +111,9 @@ void Application::parseServerConfig(const CConfig& cfg) {
 		stCfg.threadNum = serviceCfg.getCfg("thread", kDefaultThreadNum);
 		stCfg.maxConnections = serviceCfg.getCfg("maxConnections", kDefaultConnections);
 		stCfg.maxQueueLen = serviceCfg.getCfg("maxQueueLen", kDefaultQueueLen);
+		stCfg.keepAliveTime = serviceCfg.getCfg("keepAliveTime", kDefaultKeepAliveTime);
+		stCfg.emptyConnTimeOut = serviceCfg.getCfg("emptyConnTimeOut", kEmptyTimeOut);
 		stCfg.queueTimeout = serviceCfg.getCfg("queueTimeout", kDefaultTimeOut);
-		stCfg.group = serviceCfg.getCfg("group", serviceName);
-		if (m_handleThreadNum[stCfg.group] < stCfg.threadNum) {
-			m_handleThreadNum[stCfg.group] = stCfg.threadNum;
-		}
 	}
 }
 

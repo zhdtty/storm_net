@@ -55,7 +55,7 @@ public:
 			uint32_t shift_bit = (3-i)*8;
 			packetLen += (data[i]<<shift_bit)&(0xFF<<shift_bit);
 		}
-		if (len > maxLen) {
+		if (packetLen > maxLen) {
 			return Packet_Error;
 		}
 		if (len < packetLen) {
@@ -65,44 +65,6 @@ public:
 		in->readN(packetLen);
 
 		return Packet_Normal;
-	}
-};
-
-class FrameProtocolReturn {
-public:
-	static IOBuffer::ptr encode(const string& data) {
-		IOBuffer::ptr packet(new IOBuffer(data.size()));
-		packet->push_back(data);
-		return packet;
-	}
-
-	static IOBuffer::ptr encode(IOBuffer::ptr buffer) {
-		IOBuffer::ptr packet(new IOBuffer(buffer->getSize()));
-		packet->push_back(buffer);
-		return packet;
-	}
-
-	static IOBuffer::ptr decode(IOBuffer::ptr in, bool& err) {
-		err = false;
-		uint32_t len = in->getSize();
-		char* data = in->getHead();
-		bool ok = false;
-		uint32_t packetLen = 0;
-		for (uint32_t i = 0; i < len; ++i) {
-			packetLen++;
-			if (data[i] == '\n') {
-				ok = true;
-				break;
-			}
-		}
-		if (ok) {
-			IOBuffer::ptr out(new IOBuffer(packetLen));
-			memcpy(out->getHead(), in->getHead(), packetLen);
-			out->writeN(packetLen);
-			in->readN(packetLen);
-			return out;
-		}
-		return IOBuffer::ptr();
 	}
 };
 

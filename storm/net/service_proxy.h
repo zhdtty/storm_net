@@ -59,7 +59,7 @@ inline int decodeResponse(ReqMessage* message, T& response) {
 			ret = resp->ret();
 			break;
 		}
-		LOG("len %lu\n", resp->response().size());
+		//LOG("len %lu\n", resp->response().size());
 		if (!response.ParseFromString(resp->response())) {
 			ret = RespStatus_Coder;
 			break;
