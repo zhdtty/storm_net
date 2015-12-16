@@ -20,8 +20,6 @@ public:
 typedef std::shared_ptr<ServiceProxyCallBack> ServiceProxyCallBackPtr;
 
 struct RecvPacketHandler {
-	void waitResponse();
-	void signal();
 	Notifier m_notifier;
 };
 

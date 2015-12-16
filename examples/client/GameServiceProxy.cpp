@@ -26,7 +26,8 @@ void GameServiceProxy::async_Echo(ServiceProxyCallBackPtr cb, const EchoRequest&
 }
 
 void GameServiceProxyCallBack::dispatch(ReqMessage* req) {
-	uint32_t protoId = req->resp->proto_id();
+	uint32_t protoId = req->req.proto_id();
+
 	switch (protoId) {
 		case 1:
 		{

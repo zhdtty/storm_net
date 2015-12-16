@@ -13,11 +13,6 @@ namespace Storm {
 class SocketConnector;
 class ServiceProxy;
 
-enum RecvType {
-	RecvType_Close = 0,
-	RecvType_Packet = 1,
-};
-
 struct RecvPacket {
 	typedef std::shared_ptr<RecvPacket> ptr;
 	int type;
@@ -43,6 +38,7 @@ public:
 	void onClose(uint32_t closeType);
 
 	void process();
+	void terminate();
 
 	void doClose(RecvPacket::ptr pack);
 	void doRequest(RecvPacket::ptr pack);

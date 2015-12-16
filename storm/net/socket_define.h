@@ -66,6 +66,11 @@ struct Socket {
 	IOBuffer::ptr	readBuffer;
 };
 
+enum NetPacket_Type {
+	Net_Close = 0,
+	Net_Packet = 1,
+};
+
 }
 
 #endif

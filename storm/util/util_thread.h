@@ -142,6 +142,7 @@ public:
 
 	bool empty()
 	{
+		ScopeMutex<Notifier> lock(m_notifier);
 		return m_list.empty();
 	}
 

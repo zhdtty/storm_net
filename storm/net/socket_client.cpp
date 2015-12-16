@@ -54,7 +54,7 @@ void SocketClient::sendPacket(ReqMessage* req) {
 
 void SocketClient::onClose(uint32_t closeType) {
 	RecvPacket::ptr pack(new RecvPacket);
-	pack->type = RecvType_Close;
+	pack->type = Net_Close;
 	pack->closeType = closeType;
 	m_packets.push_back(pack);
 
@@ -73,7 +73,7 @@ void SocketClient::onData(IOBuffer::ptr buffer) {
 		}
 
 		RecvPacket::ptr pack(new RecvPacket);
-		pack->type = RecvType_Packet;
+		pack->type = Net_Packet;
 		swap(pack->buffer, out);
 
 		m_packets.push_back(pack);
@@ -85,19 +85,30 @@ void SocketClient::onData(IOBuffer::ptr buffer) {
 void SocketClient::process() {
 	RecvPacket::ptr pack;
 	while (m_packets.pop_front(pack, 0)) {
-		if (pack->type == RecvType_Close) {
+		if (pack->type == Net_Close) {
 			//LOG("%s close %d %d %s:%d, close type %d\n", m_listenerName.c_str(), id, fd, ip.c_str(), port, closeType);
 			doClose(pack);
-		} else if (pack->type == RecvType_Packet) {
+		} else if (pack->type == Net_Packet) {
 			doRequest(pack);
 		}
+	}
+}
+
+void SocketClient::terminate() {
+	ScopeMutex<Mutex> lock(m_mutex);
+	for (map<uint32_t, ReqMessage*>::iterator it = m_reqMessages.begin(); it != m_reqMessages.end(); ) {
+		ReqMessage* mess = it->second;
+		m_reqMessages.erase(it++);
+
+		mess->status = RespStatus_TimeOut;
+		mess->proxy->finishInvoke(mess);
 	}
 }
 
 void SocketClient::doClose(RecvPacket::ptr pack) {
 	LOG("onClose!\n");
 
-	//TODO 加锁
+	ScopeMutex<Mutex> lock(m_mutex);
 	for (map<uint32_t, ReqMessage*>::iterator it = m_reqMessages.begin(); it != m_reqMessages.end(); ) {
 		ReqMessage* mess = it->second;
 		m_reqMessages.erase(it++);

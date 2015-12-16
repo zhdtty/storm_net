@@ -1,6 +1,8 @@
 #ifndef _SOCKET_CONNECTOR_H_
 #define _SOCKET_CONNECTOR_H_
 
+#include <thread>
+
 #include "common_header.h"
 
 #include "socket_define.h"
@@ -11,6 +13,7 @@
 
 #include "util/object_pool.h"
 #include "util/util_thread.h"
+#include "util/util_timelist.h"
 
 #include <map>
 
@@ -30,7 +33,7 @@ public:
 	SocketClient::ptr getSocketClient(const string& serviceName, const string& host, uint32_t port);
 
 	void send(int id, IOBuffer::ptr buffer);
-	void close(int id);
+	void close(int id, uint32_t closeType = CloseType_Client);
 	void terminate();
 	bool isTerminate() { return m_exit; }
 
@@ -68,13 +71,16 @@ private:
 	// 请求处理
 	void handleCmd();
 	void sendSocket(int id, IOBuffer::ptr buffer);
-	void closeSocket(int id);
+	void closeSocket(int id, uint32_t closeType);
     void connectSocket(Socket* s);
 
 	// 事件处理
 	void handleRead(Socket* s);
 	void handleWrite(Socket* s);
 	void handleConnect(Socket* s);
+
+	void setUpTimeOut();
+	void doConnectTimeOut(uint32_t id);
 
 private:
 	bool m_exit;
@@ -88,7 +94,7 @@ private:
     SocketEvent 	m_event[MAX_EVENT];
 
 	ObjectPool<IOBuffer> m_bufferPool;
-	Thread m_netThread;
+	std::thread m_netThread;
 
 	//key: service name, ip, port
 	map<string, SocketClient::ptr> m_clients;
@@ -96,9 +102,11 @@ private:
 	//proxys
 	map<string, ServiceProxy*> m_proxys;
 
-	//异步回调线程
-	vector<Thread::ptr> m_asyncThreads;
+	//异步业务线程
+	vector<std::thread> m_asyncThreads;
 	Notifier m_notifier;
+
+	TimeList<uint32_t, uint32_t> m_connTimeout; //连接超时队列
 };
 
 }

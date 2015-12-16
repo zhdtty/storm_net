@@ -43,14 +43,12 @@ SocketConnector::SocketConnector()
 }
 
 void SocketConnector::start() {
-	m_netThread.start(std::bind(&SocketConnector::poll, this));
+	m_netThread = std::thread(&SocketConnector::poll, this);
 
 	LOG("socket connector start\n");
 	//异步线程启动
 	for (uint32_t i = 0; i < 1; ++i) {
-		Thread::ptr t(new Thread());
-		m_asyncThreads.push_back(t);
-		t->start(std::bind(&SocketConnector::loop, this));
+		m_asyncThreads.push_back(std::thread(&SocketConnector::loop, this));
 	}
 }
 
@@ -68,19 +66,24 @@ void SocketConnector::exit() {
 	//异步线程停止
 	wakeupAll();
 	for (uint32_t i = 0; i < m_asyncThreads.size(); ++i) {
-		m_asyncThreads[i]->join();
+		m_asyncThreads[i].join();
 	}
 }
 
 void SocketConnector::loop() {
+	bool empty = false;
 	while (!m_exit) {
-		if (isAllEmpty()) {
-			ScopeMutex<Notifier> lock(m_notifier);
-			m_notifier.wait();
-		}
 		for (map<string, SocketClient::ptr>::iterator it =  m_clients.begin(); it != m_clients.end(); ++it) {
 			it->second->process();
 		}
+		empty = isAllEmpty();
+		if (empty) {
+			ScopeMutex<Notifier> lock(m_notifier);
+			m_notifier.timedwait(500);
+		}
+	}
+	for (map<string, SocketClient::ptr>::iterator it =  m_clients.begin(); it != m_clients.end(); ++it) {
+		it->second->terminate();
 	}
 }
 
@@ -173,7 +176,7 @@ void SocketConnector::handleCmd() {
 				sendSocket(cmd.id, cmd.buffer);
 				break;
 			case Socket_Cmd_Close:
-				closeSocket(cmd.id);
+				closeSocket(cmd.id, cmd.closeType);
 				break;
 			case Socket_Cmd_Exit:
 				exit();
@@ -185,58 +188,20 @@ void SocketConnector::handleCmd() {
 void SocketConnector::sendSocket(int id, IOBuffer::ptr buffer) {
 	Socket* s = getSocket(id);
 	assert(s != NULL);
+	s->writeBuffer.push_back(buffer);
+
 	if (s->status == Socket_Status_Reserve) {
-		//没有连接，加到buffer list，建立链接
-		s->writeBuffer.push_back(buffer);
 		connectSocket(s);
 		return;
-	} else if (s->status == Socket_Status_Connecting) {
-		//连接中，加到buffer list
-		s->writeBuffer.push_back(buffer);
-		return;
 	}
-
-	if (s->status != Socket_Status_Connected) {
-		return;
-	}
-
-	char* sendBuf = buffer->getHead();
-	int remainSize = buffer->getSize();
-	bool needClose = false;
-	if (s->writeBuffer.empty()) {
-		while (1) {
-			if (remainSize == 0) {
-				break;
-			}
-			int sendSize = ::write(s->fd, sendBuf, remainSize);
-			if (sendSize == 0) {
-				needClose = true;
-				break;
-			} else if (sendSize < 0) {
-				if (errno == EAGAIN) {	//不能再写了
-					m_poll.addEvent(s->fd, EP_WRITE, s);
-					break;
-				} else if (errno == EINTR) {
-					continue;
-				} else {
-					needClose = true;
-					break;
-				}
-			} else {
-				sendBuf += sendSize;
-				remainSize -= sendSize;
-				buffer->readN(sendSize);
-			}
-		}
-	}
-	if (needClose) {
-		forceClose(s, CloseType_Server);
-	} else if (remainSize != 0) {
-		s->writeBuffer.push_back(buffer);
+	if (s->status == Socket_Status_Connected) {
+		handleWrite(s);
 	}
 }
 
 void SocketConnector::connectSocket(Socket* s) {
+	uint32_t now = UtilTime::getNow();
+	m_connTimeout.add(s->id, now);
 	bool success = false;
 	do {
 		int fd = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -270,6 +235,7 @@ void SocketConnector::connectSocket(Socket* s) {
 			s->client->onConnect(s->id);
 			m_poll.addEvent(fd, EP_READ, s);
 			handleWrite(s);
+			m_connTimeout.del(s->id);
 		} else {
 			s->status = Socket_Status_Connecting;
 			m_poll.addEvent(fd, EP_WRITE, s);
@@ -280,15 +246,16 @@ void SocketConnector::connectSocket(Socket* s) {
 		LOG("socket-server: connect socket error\n");
 		s->status = Socket_Status_Reserve;
 		s->client->onClose(CloseType_ConnectFail);
+		m_connTimeout.del(s->id);
 	}
 }
 
-void SocketConnector::closeSocket(int id) {
+void SocketConnector::closeSocket(int id, uint32_t closeType) {
 	Socket* s = getSocket(id);
 	if (s == NULL || s->status == Socket_Status_Idle) {
 		return;
 	}
-	forceClose(s, CloseType_Client);
+	forceClose(s, closeType);
 }
 
 void SocketConnector::handleConnect(Socket* s)
@@ -307,6 +274,7 @@ void SocketConnector::handleConnect(Socket* s)
 	s->client->onConnect(s->id);
 	m_poll.addEvent(s->fd, EP_READ, s);
 	handleWrite(s);
+	m_connTimeout.del(s->id);
 }
 
 void SocketConnector::handleRead(Socket* s) {
@@ -446,10 +414,11 @@ void SocketConnector::send(int id, IOBuffer::ptr buffer) {
 	pushCmd(cmd);
 }
 
-void SocketConnector::close(int id) {
+void SocketConnector::close(int id, uint32_t closeType) {
 	SocketCmd cmd;
 	cmd.id = id;
 	cmd.type = Socket_Cmd_Close;
+	cmd.closeType = closeType;
 
 	pushCmd(cmd);
 }
@@ -492,6 +461,16 @@ SocketClient::ptr SocketConnector::getSocketClient(const string& serviceName, co
 	m_clients.insert(make_pair(key, client));
 
 	return client;
+}
+
+void SocketConnector::setUpTimeOut() {
+	//TODO 连接超时
+	m_connTimeout.setTimeout(3);
+	m_connTimeout.setFunction(std::bind(&SocketConnector::doConnectTimeOut, this, std::placeholders::_1));
+}
+
+void SocketConnector::doConnectTimeOut(uint32_t id) {
+	close(id, CloseType_ConnectFail);
 }
 
 }

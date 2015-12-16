@@ -17,11 +17,6 @@ namespace Storm {
 class SocketServer;
 class SocketHandler;
 
-enum NetPacket_Type {
-	Net_Close,
-	Net_Packet,
-};
-
 struct NetPacket {
 	typedef std::shared_ptr<NetPacket> ptr;
 	int type;
