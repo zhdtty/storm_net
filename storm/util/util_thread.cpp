@@ -43,7 +43,7 @@ void* Thread::threadEntry(void* argc) {
 	return (void*)NULL;
 }
 
-void Thread::start(boost::function<void (void) > entry) {
+void Thread::start(std::function<void (void) > entry) {
 	if (m_bRunning) {
 		return;
 	}

@@ -43,14 +43,14 @@ SocketConnector::SocketConnector()
 }
 
 void SocketConnector::start() {
-	m_netThread.start(boost::bind(&SocketConnector::poll, this));
+	m_netThread.start(std::bind(&SocketConnector::poll, this));
 
 	LOG("socket connector start\n");
 	//异步线程启动
 	for (uint32_t i = 0; i < 1; ++i) {
 		Thread::ptr t(new Thread());
 		m_asyncThreads.push_back(t);
-		t->start(boost::bind(&SocketConnector::loop, this));
+		t->start(std::bind(&SocketConnector::loop, this));
 	}
 }
 

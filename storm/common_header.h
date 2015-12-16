@@ -11,10 +11,6 @@
 
 #include <functional>
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include "net/io_buffer.h"
 #include "log.h"
 

@@ -14,10 +14,10 @@ class SocketConnector;
 
 class ServiceProxyCallBack {
 public:
-	typedef boost::shared_ptr<ServiceProxyCallBack> ptr;
+	typedef std::shared_ptr<ServiceProxyCallBack> ptr;
 	virtual void dispatch(ReqMessage* req) = 0;
 };
-typedef boost::shared_ptr<ServiceProxyCallBack> ServiceProxyCallBackPtr;
+typedef std::shared_ptr<ServiceProxyCallBack> ServiceProxyCallBackPtr;
 
 struct RecvPacketHandler {
 	void waitResponse();
@@ -27,7 +27,7 @@ struct RecvPacketHandler {
 
 class ServiceProxy {
 public:
-	typedef boost::shared_ptr<ServiceProxy> ptr;
+	typedef std::shared_ptr<ServiceProxy> ptr;
 	ServiceProxy(SocketConnector* connector);
 	bool parseFromString(const string& config);
 	virtual ~ServiceProxy(){}

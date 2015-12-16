@@ -74,7 +74,7 @@ class SocketHandler {
 	friend class SocketServer;
 	friend class SocketListener;
 public:
-	typedef boost::shared_ptr<SocketHandler> ptr;
+	typedef std::shared_ptr<SocketHandler> ptr;
 
 	SocketHandler();
 	virtual ~SocketHandler() {}

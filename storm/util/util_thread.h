@@ -5,12 +5,14 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <memory>
-#include <boost/noncopyable.hpp>
-#include <boost/function.hpp>
+
+#include <functional>
+
+#include "noncopyable.h"
 
 namespace Storm
 {
-class Mutex : public boost::noncopyable {
+class Mutex : public noncopyable {
 public:
 	Mutex() {
 		pthread_mutex_init(&m_mutex, NULL);
@@ -33,7 +35,7 @@ private:
 };
 
 template <typename T>
-class ScopeMutex : public boost::noncopyable {
+class ScopeMutex : public noncopyable {
 public:
 	ScopeMutex(T& lock):m_lock(lock), m_bLocked(true) {
 		m_lock.lock();
@@ -59,7 +61,7 @@ private:
 	bool	m_bLocked;
 };
 
-class Notifier : public boost::noncopyable {
+class Notifier : public noncopyable {
 public:
 	Notifier();
 	~Notifier();
@@ -77,11 +79,11 @@ private:
 	Mutex 			m_lock;
 };
 
-class Thread : public boost::noncopyable {
+class Thread : public noncopyable {
 public:
 	typedef std::shared_ptr<Thread> ptr;
 	Thread():m_bRunning(false) {}
-	void start(boost::function<void (void) > entry);
+	void start(std::function<void (void) > entry);
 	void join();
 
 	pthread_t getThreadId() {
@@ -92,7 +94,7 @@ private:
 	static void* threadEntry(void* argc);
 private:
 	bool m_bRunning;
-	boost::function<void (void) > m_entry;
+	std::function<void (void) > m_entry;
 	pthread_t m_thread;
 };
 

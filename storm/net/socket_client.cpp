@@ -8,7 +8,7 @@
 namespace Storm {
 
 SocketClient::SocketClient() {
-	setProtocol(boost::bind(FrameProtocolLen::decode, _1, _2));
+	setProtocol(std::bind(FrameProtocolLen::decode, std::placeholders::_1, std::placeholders::_2));
 }
 
 void SocketClient::setReqMessage(ReqMessage* mess) {

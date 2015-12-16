@@ -9,7 +9,7 @@ namespace Storm {
 class ServiceProxy;
 class ServiceProxyCallBack;
 class RecvPacketHandler;
-typedef boost::shared_ptr<ServiceProxyCallBack> ServiceProxyCallBackPtr;
+typedef std::shared_ptr<ServiceProxyCallBack> ServiceProxyCallBackPtr;
 
 enum InvokeType {
 	InvokeType_Sync,

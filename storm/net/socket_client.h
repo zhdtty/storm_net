@@ -19,7 +19,7 @@ enum RecvType {
 };
 
 struct RecvPacket {
-	typedef boost::shared_ptr<RecvPacket> ptr;
+	typedef std::shared_ptr<RecvPacket> ptr;
 	int type;
 	int closeType;
 	string buffer;
@@ -28,7 +28,7 @@ struct RecvPacket {
 class SocketClient {
 public:
 	friend class SocketConnector;
-	typedef boost::shared_ptr<SocketClient> ptr;
+	typedef std::shared_ptr<SocketClient> ptr;
 
 	SocketClient();
 

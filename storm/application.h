@@ -1,6 +1,8 @@
 #ifndef _STORM_APPLICATION_H_
 #define _STORM_APPLICATION_H_
 
+#include <unistd.h>
+
 #include "net/socket_server.h"
 #include "net/socket_connector.h"
 #include "util/util_config.h"
