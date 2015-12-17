@@ -39,7 +39,7 @@ public:
 
 	template <typename T>
 	T* stringToPrx(const string& serviceName) {
-		//TODO 加锁
+		ScopeMutex<Mutex> lock(m_mutex);
 		map<string, ServiceProxy*>::iterator it = m_proxys.find(serviceName);
 		if (it != m_proxys.end()) {
 			return dynamic_cast<T*>(it->second);
@@ -101,6 +101,7 @@ private:
 
 	//proxys
 	map<string, ServiceProxy*> m_proxys;
+	Mutex m_mutex;
 
 	//异步业务线程
 	vector<std::thread> m_asyncThreads;

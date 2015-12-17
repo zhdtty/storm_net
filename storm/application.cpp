@@ -20,14 +20,13 @@ const static uint32_t kEmptyTimeOut = 15;
 const static uint32_t kDefaultKeepAliveTime = 60;
 const static uint32_t kDefaultTimeOut = 60;
 
-SocketServer* Application::m_sockServer = new SocketServer();
-SocketConnector* Application::m_connector = new SocketConnector();
+bool g_exit = false;
 
 static string g_pidFile;
 
 static void sighandler(int /*sig*/)
 {
-	Application::terminate();
+	g_exit = true;
 }
 
 void Application::terminate() {
@@ -37,6 +36,9 @@ void Application::terminate() {
 
 int Application::run(int argc, char** argv) {
 	try {
+		m_sockServer = new SocketServer();
+		m_connector = new SocketConnector();
+
 		parseConfig(argc, argv);
 		savePidFile();
 		signal(SIGINT, sighandler);
@@ -54,8 +56,12 @@ int Application::run(int argc, char** argv) {
 		LOG("size of Server %ld\n", sizeof(*m_sockServer));
 
 		m_connector->start();
-		while (!m_sockServer->isTerminate()) {
-			loop();
+		while (!m_sockServer->isTerminate() && !m_connector->isTerminate()) {
+			if (g_exit) {
+				terminate();
+			} else {
+				loop();
+			}
 		}
 
 		destroy();
