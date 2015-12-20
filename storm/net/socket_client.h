@@ -7,6 +7,8 @@
 #include "common_header.h"
 #include "socket_define.h"
 #include "util/util_thread.h"
+#include "util/util_timelist.h"
+
 #include "request.h"
 
 namespace Storm {
@@ -47,9 +49,11 @@ public:
 		m_protocol = protocol;
 	}
 
+	void doTimeOut();
+	void doTimeClose(uint32_t id);
+
 private:
 	void setReqMessage(ReqMessage* mess);
-	ReqMessage* getReqMessage(uint32_t requestId);
 	ReqMessage* getAndDelReqMessage(uint32_t requestId);
 	void delReqMessage(uint32_t requestId);
 
@@ -65,6 +69,7 @@ private:
 	map<uint32_t, ReqMessage*> m_reqMessages;
 	Mutex m_mutex;
 	atomic_uint m_sequeue;
+	TimeList<uint32_t, uint32_t> m_timeout;
 };
 }
 

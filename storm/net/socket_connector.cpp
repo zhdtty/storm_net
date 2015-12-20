@@ -43,6 +43,7 @@ SocketConnector::SocketConnector()
 }
 
 void SocketConnector::start() {
+	setUpTimeOut();
 	m_netThread = std::thread(&SocketConnector::poll, this);
 
 	LOG("socket connector start\n");
@@ -78,6 +79,9 @@ void SocketConnector::loop() {
 		}
 		empty = isAllEmpty();
 		if (empty) {
+			for (map<string, SocketClient::ptr>::iterator it =  m_clients.begin(); it != m_clients.end(); ++it) {
+				it->second->doTimeOut();
+			}
 			ScopeMutex<Notifier> lock(m_notifier);
 			m_notifier.timedwait(500);
 		}

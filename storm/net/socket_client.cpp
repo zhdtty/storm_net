@@ -5,24 +5,30 @@
 #include "protocol.h"
 #include "socket_connector.h"
 
+#include "util/util_time.h"
+
 namespace Storm {
 
 SocketClient::SocketClient() {
 	setProtocol(std::bind(FrameProtocolLen::decode, std::placeholders::_1, std::placeholders::_2));
+	m_timeout.setTimeout(3);
+	m_timeout.setFunction(std::bind(&SocketClient::doTimeClose, this, std::placeholders::_1));
+}
+
+void SocketClient::doTimeOut() {
+	uint32_t now = UtilTime::getNow();
+	m_timeout.timeout(now);
+}
+
+void SocketClient::doTimeClose(uint32_t id) {
+	m_connector->close(m_id, CloseType_Timeout);
 }
 
 void SocketClient::setReqMessage(ReqMessage* mess) {
 	ScopeMutex<Mutex> lock(m_mutex);
 	m_reqMessages[mess->req.request_id()] = mess;
-}
-
-ReqMessage* SocketClient::getReqMessage(uint32_t requestId) {
-	ScopeMutex<Mutex> lock(m_mutex);
-	map<uint32_t, ReqMessage*>::iterator it = m_reqMessages.find(requestId);
-	if (it == m_reqMessages.end()) {
-		return NULL;
-	}
-	return it->second;
+	uint32_t now = UtilTime::getNow();
+	m_timeout.add(mess->req.request_id(), now);
 }
 
 ReqMessage* SocketClient::getAndDelReqMessage(uint32_t requestId) {
@@ -33,6 +39,7 @@ ReqMessage* SocketClient::getAndDelReqMessage(uint32_t requestId) {
 	}
 	ReqMessage* temp = it->second;
 	m_reqMessages.erase(it);
+	m_timeout.del(requestId);
 	return temp;
 }
 
@@ -97,6 +104,7 @@ void SocketClient::process() {
 void SocketClient::terminate() {
 	ScopeMutex<Mutex> lock(m_mutex);
 	for (map<uint32_t, ReqMessage*>::iterator it = m_reqMessages.begin(); it != m_reqMessages.end(); ) {
+		m_timeout.del(it->first);
 		ReqMessage* mess = it->second;
 		m_reqMessages.erase(it++);
 
@@ -110,6 +118,7 @@ void SocketClient::doClose(RecvPacket::ptr pack) {
 
 	ScopeMutex<Mutex> lock(m_mutex);
 	for (map<uint32_t, ReqMessage*>::iterator it = m_reqMessages.begin(); it != m_reqMessages.end(); ) {
+		m_timeout.del(it->first);
 		ReqMessage* mess = it->second;
 		m_reqMessages.erase(it++);
 

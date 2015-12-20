@@ -1,5 +1,7 @@
 #include "GameService.h"
 
+#include <unistd.h>
+
 #include "util/util_time.h"
 
 //测试用
@@ -25,19 +27,19 @@ int GameService::doRpcRequest(NetPacket::ptr pack, const RpcRequest& req, RpcRes
 			EchoResponse response;
 			if (!request.ParseFromString(req.request())) {
 				LOG("error\n");
-				return -1;
+				return RespStatus_Coder;
 			}
 			Echo(pack, request, response);
 			if (req.invoke_type() != InvokeType_OneWay) {
 				if (!response.SerializeToString(resp.mutable_response())) {
 					LOG("error\n");
-					return -1;
+					return RespStatus_Coder;
 				}
 			}
 			break;
 		}
 		default:
-			return -1;
+			return RespStatus_NoProtoId;
 			break;
 	}
 

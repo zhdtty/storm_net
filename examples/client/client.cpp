@@ -25,8 +25,8 @@ void Client::destroy() {
 class GameServiceProxyCB : public GameServiceProxyCallBack {
 public:
 	void callback_Echo(int ret, const EchoResponse& response) {
-	//	cout << response.msg() << endl;
-		//LOG("ret %d\n", ret);
+//		cout << response.msg() << endl;
+//	LOG("ret %d\n", ret);
 		//LOG("msg len %lu\n", response.msg().size());
 	}
 };

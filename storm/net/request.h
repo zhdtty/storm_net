@@ -22,7 +22,8 @@ enum RespStatus {
 	RespStatus_TimeOut = 1, //调用超时
 	RespStatus_UnReachableHost = 2, //目标不能连接
 	RespStatus_Coder = 3,   //编解码出错
-	RespStatus_Error = 4, //未知错误
+	RespStatus_NoProtoId = 4, //协议不存在
+	RespStatus_Error = 5, //未知错误
 };
 
 struct ReqMessage {
