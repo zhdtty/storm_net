@@ -46,13 +46,13 @@ void Client::loop() {
 
 	//异步调用
 	ServiceProxyCallBackPtr cb(new GameServiceProxyCB);
-	prx->async_Echo(cb, request);
+	//prx->async_Echo(cb, request);
 	//prx->async_Echo(cb, request);
 
 	//单向调用
 	prx->async_Echo(NULL, request);
 	//prx->async_Echo(NULL, request);
-//	sleep(1);
+	sleep(1);
 }
 
 int main(int argc, char** argv) {

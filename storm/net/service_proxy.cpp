@@ -83,10 +83,13 @@ ReqMessage* ServiceProxy::newRequest(InvokeType type, ServiceProxyCallBackPtr cb
 }
 
 void ServiceProxy::doInvoke(ReqMessage* req) {
+	uint32_t invokeType = req->invokeType;
+
 	//TODO 选client
 	m_clients[0]->sendPacket(req);
 
-	if (req->invokeType == InvokeType_Sync) {
+	//异步请求req后面不一定用了，所以这里把invokeType复制
+	if (invokeType == InvokeType_Sync) {
 		//TODO 这里永远等下去, 在client里加超时判断
 		req->handler->m_notifier.wait();
 	}
@@ -99,6 +102,7 @@ void ServiceProxy::finishInvoke(ReqMessage* req) {
 	} else if (req->invokeType == InvokeType_Async) {
 		//TODO 提供一个接受队列，塞到队列里，实现callback指定线程调用
 		req->cb->dispatch(req);
+		delRequest(req);
 	}
 }
 

@@ -28,7 +28,7 @@ void SocketClient::setReqMessage(ReqMessage* mess) {
 	ScopeMutex<Mutex> lock(m_mutex);
 	m_reqMessages[mess->req.request_id()] = mess;
 	uint32_t now = UtilTime::getNow();
-	m_timeout.add(mess->req.request_id(), now);
+	//m_timeout.add(mess->req.request_id(), now);
 }
 
 ReqMessage* SocketClient::getAndDelReqMessage(uint32_t requestId) {
@@ -39,7 +39,7 @@ ReqMessage* SocketClient::getAndDelReqMessage(uint32_t requestId) {
 	}
 	ReqMessage* temp = it->second;
 	m_reqMessages.erase(it);
-	m_timeout.del(requestId);
+	//m_timeout.del(requestId);
 	return temp;
 }
 
@@ -104,7 +104,7 @@ void SocketClient::process() {
 void SocketClient::terminate() {
 	ScopeMutex<Mutex> lock(m_mutex);
 	for (map<uint32_t, ReqMessage*>::iterator it = m_reqMessages.begin(); it != m_reqMessages.end(); ) {
-		m_timeout.del(it->first);
+		//m_timeout.del(it->first);
 		ReqMessage* mess = it->second;
 		m_reqMessages.erase(it++);
 
@@ -118,7 +118,7 @@ void SocketClient::doClose(RecvPacket::ptr pack) {
 
 	ScopeMutex<Mutex> lock(m_mutex);
 	for (map<uint32_t, ReqMessage*>::iterator it = m_reqMessages.begin(); it != m_reqMessages.end(); ) {
-		m_timeout.del(it->first);
+		//m_timeout.del(it->first);
 		ReqMessage* mess = it->second;
 		m_reqMessages.erase(it++);
 

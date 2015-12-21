@@ -14,13 +14,14 @@ int GameServiceProxy::Echo(const EchoRequest& request, EchoResponse& response) {
 
 void GameServiceProxy::async_Echo(ServiceProxyCallBackPtr cb, const EchoRequest& request) {
 	ReqMessage* message = newRequest(InvokeType_Async, cb);
+	uint32_t invokeType = message->invokeType;
 	message->req.set_proto_id(1);
 	request.SerializeToString(message->req.mutable_request());
 
 	doInvoke(message);
 
 	//单向调用此时可以删掉请求，之后用不到了
-	if (message->invokeType == InvokeType_OneWay) {
+	if (invokeType == InvokeType_OneWay) {
 		delete message;
 	}
 }
@@ -41,6 +42,6 @@ void GameServiceProxyCallBack::dispatch(ReqMessage* req) {
 			LOG("unkown protoId %d\n", protoId);
 		}
 	}
-	delRequest(req);
+	//delRequest(req);
 }
 

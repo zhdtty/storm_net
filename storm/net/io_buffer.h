@@ -25,6 +25,7 @@ public:
 		,m_head(0)
 		,m_tail(0)
 	{
+		//m_data = (char*)calloc(m_capacity, sizeof(char));
 		m_data = (char*)malloc(sizeof(char) * m_capacity);
 	}
 
