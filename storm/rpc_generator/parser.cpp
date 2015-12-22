@@ -113,6 +113,7 @@ void Parser::generator() {
 
 void Parser::generatorHead() {
 	m_oss.str("");
+	m_oss << "/*代码生成器自动生成，请不要手动修改!*/" << endl;
 	printHead();
 	for (uint32_t i = 0; i < m_services.size(); ++i) {
 		printServiceHead(m_services[i]);
@@ -124,6 +125,7 @@ void Parser::generatorHead() {
 
 void Parser::generatorSource() {
 	m_oss.str("");
+	m_oss << "/*代码生成器自动生成，请不要手动修改!*/" << endl;
 	m_oss << "#include \"" << m_fileName << ".h\"" << endl;
 	m_oss << endl << endl;
 	if (!m_nameSpace.empty()) {
