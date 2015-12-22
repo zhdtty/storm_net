@@ -4,13 +4,13 @@
 
 #include "storm/log.h"
 
-#include "GameService.h"
+#include "GameServiceImp.h"
 
 Server g_server;
 
 bool Server::initialize() {
 	m_count = 0;
-	addService<GameService>("GameService");
+	addService<GameServiceImp>("GameService");
 	//addService<SocketListener>("EchoService1");
 
 	return true;

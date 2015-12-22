@@ -2,6 +2,7 @@ set(APP client)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/storm SRC_LIST)
+include_directories(${CMAKE_SOURCE_DIR}/examples/server_proto)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} SRC_LIST)
 aux_source_directory(${CMAKE_SOURCE_DIR}/storm SRC_LIST)

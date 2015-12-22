@@ -14,3 +14,4 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -std=c++11 -O2 -Wall")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(examples)
+add_subdirectory(storm/rpc_generator)

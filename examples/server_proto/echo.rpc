@@ -1,0 +1,7 @@
+#include "echo.proto"
+
+using namespace Common;
+
+service GameService {
+	Echo(EchoRequest req, EchoResponse resp) = 1;
+};
