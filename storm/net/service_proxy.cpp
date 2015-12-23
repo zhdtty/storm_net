@@ -99,11 +99,10 @@ void ServiceProxy::doInvoke(ReqMessage* req) {
 void ServiceProxy::finishInvoke(ReqMessage* req) {
 	if (req->invokeType == InvokeType_Sync) {
 		req->handler->m_notifier.signal();
-	} else if (req->invokeType == InvokeType_Async) {
-		//TODO 提供一个接受队列，塞到队列里，实现callback指定线程调用
-		req->cb->dispatch(req);
-		delRequest(req);
-	}
+		return;
+	} 
+	//TODO 提供一个接受队列，塞到队列里，实现callback指定线程调用
+	req->cb->dispatch(req);
 }
 
 void delRequest(ReqMessage* mess) {

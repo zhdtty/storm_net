@@ -35,11 +35,11 @@ void Parser::run(int argc, char** argv) {
 
 	//show();
 	generator();
-	cout << "ok!\n" << endl;
+	cout << "ok!" << endl;
 }
 
 void Parser::error(const string& err) {
-	cerr << "Error: " << yylineno << " : " << err << endl;
+	cerr << "Error: line: " << yylineno << " : " << err << endl;
 	exit(1);
 }
 
@@ -244,13 +244,13 @@ void Parser::printServiceSource(Service& s) {
 		tab(3) << f.m_outputClassName << " response;" << endl;
 		tab(3) << "if (!request.ParseFromString(req.request())) {" << endl;
 		tab(4) << "LOG(\"error\\n\");" << endl;
-		tab(4) << "return RespStatus_Coder;" << endl;
+		tab(4) << "return RespStatus_CoderError;" << endl;
 		tab(3) << "}" << endl;
 		tab(3) << f.m_name << "(pack, request, response);" << endl;
 		tab(3) << "if (req.invoke_type() != InvokeType_OneWay) {" << endl;
 		tab(4) << "if (!response.SerializeToString(resp.mutable_response())) {" << endl;
 		tab(5) << "LOG(\"error\\n\");" << endl;
-		tab(5) << "return RespStatus_Coder;" << endl;
+		tab(5) << "return RespStatus_CoderError;" << endl;
 		tab(4) << "}" << endl;
 		tab(3) << "}" << endl;
 		tab(3) << "break;" << endl;
@@ -322,6 +322,7 @@ void Parser::printServiceSource(Service& s) {
 	tab(3) << "LOG(\"unkown protoId %d\\n\", protoId);" << endl;
 	tab(2) << "}" << endl;
 	tab(1) << "}" << endl;
+	tab(1) << "delRequest(req);" << endl;
 	m_oss << "}" << endl;
 }
 

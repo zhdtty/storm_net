@@ -21,7 +21,7 @@ enum RespStatus {
 	RespStatus_Ok = 0, 		//正常返回
 	RespStatus_TimeOut = 1, //调用超时
 	RespStatus_UnReachableHost = 2, //目标不能连接
-	RespStatus_Coder = 3,   //编解码出错
+	RespStatus_CoderError = 3,   //编解码出错
 	RespStatus_NoProtoId = 4, //协议不存在
 	RespStatus_Error = 5, //未知错误
 };
