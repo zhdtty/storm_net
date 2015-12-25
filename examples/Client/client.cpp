@@ -9,11 +9,11 @@
 
 Client g_server;
 
-GameServiceProxy* prx = NULL;
+GameServiceProxy* g_prx = NULL;
 
 bool Client::initialize() {
 	m_count = 0;
-	prx = m_connector->stringToPrx<GameServiceProxy>("Server@tcp -h 127.0.0.1 -p 1234");
+	g_prx = m_connector->stringToPrx<GameServiceProxy>("Server@tcp -h 127.0.0.1 -p 1234");
 												 //:tcp -h 127.0.0.1 -p 10001");
 
 	return true;
@@ -33,26 +33,22 @@ public:
 };
 
 void Client::loop() {
-//	m_msgQueue.pop_front(num, 1);
-
 	EchoRequest request;
 	request.set_msg("带着相机去旅行");
 
 	//同步调用
 	EchoResponse response;
-//	int ret = prx->Echo(request, response);
+//	int ret = g_prx->Echo(request, response);
 	//cout << response.msg() << endl;
 //	LOG("ret %d\n", ret);
 //	LOG("msg len %lu\n", response.msg().size());
 
 	//异步调用
 	ServiceProxyCallBackPtr cb(new GameServiceProxyCB);
-	prx->async_Echo(cb, request);
-	//prx->async_Echo(cb, request);
+	g_prx->async_Echo(cb, request);
 
 	//单向调用
-	prx->async_Echo(NULL, request);
-	//prx->async_Echo(NULL, request);
+	g_prx->async_Echo(NULL, request);
 //	sleep(1);
 }
 
