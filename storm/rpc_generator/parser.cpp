@@ -5,6 +5,7 @@
 #include "util/util_file.h"
 #include "util/util_string.h"
 
+extern int yyparse ();
 Parser g_parser;
 
 using namespace Storm;

@@ -1,4 +1,4 @@
-依赖： gcc4.8 cmake 2.8 protobuf
+依赖： gcc4.8 cmake 2.8 protobuf flex bison
 
 编译
 	mkdir build
