@@ -9,7 +9,6 @@
 Server g_server;
 
 bool Server::initialize() {
-	m_count = 0;
 	addService<GameServiceImp>("GameService");
 
 	return true;
@@ -24,7 +23,8 @@ void Server::loop() {
 	m_msgQueue.pop_front(num, 1 * 1000);
 }
 
-int main(int argc, char** argv) {
-	 return g_server.run(argc, argv);
+int main(int argc, char** argv) {	
+	setDefaultConfigFile("server.conf");
+	return g_server.run(argc, argv);
 }
 

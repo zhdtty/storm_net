@@ -13,7 +13,7 @@ class Application {
 public:
 	int run(int argc, char** argv);
 
-	void terminate();
+	static void terminate();
 
 protected:
 	virtual bool initialize() {return true;};
@@ -44,9 +44,11 @@ private:
 
 protected:
 	ServerConfig m_config;
-	SocketServer* m_sockServer;
-	SocketConnector* m_connector;
+	static SocketServer* m_sockServer;
+	static SocketConnector* m_connector;
 };
+
+void setDefaultConfigFile(const string& file);
 }
 
 #endif

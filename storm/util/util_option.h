@@ -12,7 +12,7 @@ namespace Storm
 class COption
 {
 public:
-	COption():m_stop(false),m_configFile("app.conf") {}
+	COption():m_stop(false) {}
 
     void parse(int argc, char *argv[]);
 	string getConfigFile() { return m_configFile; }

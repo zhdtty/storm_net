@@ -53,6 +53,7 @@ void Client::loop() {
 }
 
 int main(int argc, char** argv) {
-	 return g_server.run(argc, argv);
+	setDefaultConfigFile("client.conf");
+	return g_server.run(argc, argv);
 }
 

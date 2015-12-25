@@ -23,6 +23,10 @@ const static uint32_t kDefaultTimeOut = 60;
 bool g_exit = false;
 
 static string g_pidFile;
+static string g_configFile;
+
+SocketServer* Application::m_sockServer = NULL;
+SocketConnector* Application::m_connector = NULL;
 
 static void sighandler(int /*sig*/)
 {
@@ -53,15 +57,15 @@ int Application::run(int argc, char** argv) {
 
 		m_sockServer->show();
 		m_sockServer->start();
+		m_connector->start();
 		LOG("size of Server %ld\n", sizeof(*m_sockServer));
 
-		m_connector->start();
 		while (!m_sockServer->isTerminate() && !m_connector->isTerminate()) {
 			if (g_exit) {
 				terminate();
-			} else {
-				loop();
+				break;
 			}
+			loop();
 		}
 
 		destroy();
@@ -82,7 +86,7 @@ void Application::parseConfig(int argc, char** argv) {
 
 	string configFile = option.getConfigFile();
 	if (configFile.empty()) {
-		configFile = "app.conf";
+		configFile = g_configFile;
 	}
 
 	CConfig config;
@@ -175,6 +179,10 @@ void Application::killOldProcess() {
 	}
 
 	cout << "server exit " << endl;
+}
+
+void setDefaultConfigFile(const string& file) {
+	g_configFile = file;
 }
 
 }

@@ -13,7 +13,6 @@ private:
 
 private:
 	LockQueue<int> m_msgQueue;
-	int m_count;
 };
 
 #endif
