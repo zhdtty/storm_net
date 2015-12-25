@@ -9,7 +9,7 @@ Parser g_parser;
 
 using namespace Storm;
 void help() {
-	cerr << "Usage generator inputfile\n";
+	cerr << "Usage generator input_file [output_dir]\n";
 }
 
 void Parser::run(int argc, char** argv) {

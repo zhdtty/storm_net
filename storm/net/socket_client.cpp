@@ -27,7 +27,7 @@ void SocketClient::doTimeClose(uint32_t id) {
 void SocketClient::setReqMessage(ReqMessage* mess) {
 	ScopeMutex<Mutex> lock(m_mutex);
 	m_reqMessages[mess->req.request_id()] = mess;
-	uint32_t now = UtilTime::getNow();
+	//uint32_t now = UtilTime::getNow();
 	//m_timeout.add(mess->req.request_id(), now);
 }
 

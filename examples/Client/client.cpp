@@ -5,11 +5,12 @@
 
 #include "storm/log.h"
 
-#include "echo.h"
+#include "GameService.h"
 
 Client g_server;
 
 GameServiceProxy* prx = NULL;
+
 bool Client::initialize() {
 	m_count = 0;
 	prx = m_connector->stringToPrx<GameServiceProxy>("Server@tcp -h 127.0.0.1 -p 1234");

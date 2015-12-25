@@ -1,7 +1,7 @@
 #ifndef _GAME_SERVICE_IMP_H_
 #define _GAME_SERVICE_IMP_H_
 
-#include "echo.h"
+#include "GameService.h"
 
 class GameServiceImp : public GameService {
 public:
