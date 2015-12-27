@@ -1,4 +1,4 @@
-set(APP generator)
+set(APP rpc2cpp)
 
 ADD_CUSTOM_COMMAND(
 	OUTPUT lex.yy.hpp lex.yy.cpp

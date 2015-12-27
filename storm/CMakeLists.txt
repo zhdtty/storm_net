@@ -1,17 +1,15 @@
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${PROTOBUF_INCLUDE_DIRS})
 
-add_custom_command (
-	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/proto/rpc_proto.pb.cc
-	COMMAND protoc --cpp_out=${CMAKE_CURRENT_SOURCE_DIR}/proto/ -I=${CMAKE_CURRENT_SOURCE_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/proto/rpc_proto.proto
-	DEPENDS proto/rpc_proto.proto
-)
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS proto/rpc_proto.proto)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} SRC_LIST)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/net SRC_LIST)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/util SRC_LIST)
 
-add_library(storm ${SRC_LIST} ${CMAKE_CURRENT_SOURCE_DIR}/proto/rpc_proto.pb.cc)
+add_library(storm ${SRC_LIST} ${PROTO_SRCS} ${PROTO_HDRS})
+
 install(TARGETS storm DESTINATION lib)
 
 file(GLOB headers1 *.h)
@@ -27,4 +25,3 @@ file(GLOB headers4 proto/*.h)
 install(FILES ${headers4} DESTINATION include/proto)
 
 add_subdirectory(rpc_generator)
-message(STATUS ${Test})

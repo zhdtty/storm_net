@@ -10,7 +10,7 @@ add_custom_command (
 
 add_custom_command (
 	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/RpcProto/GameService.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RpcProto/GameService.h
-	COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/RpcProto && ${PROJECT_BINARY_DIR}/generator GameService.rpc
+	COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/RpcProto && ${PROJECT_BINARY_DIR}/rpc2cpp GameService.rpc
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/RpcProto/GameService.rpc
 )
 

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "util/util_time.h"
 
-#include "storm/log.h"
+#include "log.h"
 
 #include "GameService.h"
 

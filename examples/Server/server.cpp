@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "storm/log.h"
+#include "log.h"
 
 #include "GameServiceImp.h"
 
