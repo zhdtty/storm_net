@@ -27,3 +27,4 @@ file(GLOB headers4 proto/*.h)
 install(FILES ${headers4} DESTINATION include/proto)
 
 add_subdirectory(rpc_generator)
+message(STATUS ${Test})

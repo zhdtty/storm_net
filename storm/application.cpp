@@ -7,7 +7,7 @@
 #include "util/util_config.h"
 #include "util/util_file.h"
 
-#include "storm/log.h"
+#include "log.h"
 
 #include "common_header.h"
 
