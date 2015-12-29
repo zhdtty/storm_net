@@ -393,6 +393,7 @@ void SocketConnector::doTimer() {
 	for (map<string, ServiceProxy*>::iterator it = m_proxys.begin(); it != m_proxys.end(); ++it) {
 		it->second->doTimeOut();
 	}
+	lock.unlock();
 
 	if (now > m_updateProxyTime) {
 		updateProxyEndPoints();

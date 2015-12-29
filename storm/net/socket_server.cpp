@@ -386,7 +386,6 @@ void SocketServer::closeSocket(int id, uint32_t closeType) {
 void SocketServer::start() {
 	m_netThread = std::thread(&SocketServer::poll, this);
 
-	LOG("start\n");
 	for (map<string, SocketHandler::ptr>::iterator it = m_handlers.begin(); it != m_handlers.end(); ++it) {
 		SocketHandler::ptr handle = it->second;
 		handle->start();
