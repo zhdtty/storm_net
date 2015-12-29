@@ -7,11 +7,11 @@
 uint64_t g_time = 0;
 uint32_t g_count = 0;
 
-void GameServiceImp::doClose(NetPacket::ptr pack) {
+void GameServiceImp::doClose(Connection::ptr pack) {
 	LOG("doClose id %d fd %d\n", pack->id, pack->fd);
 }
 
-void GameServiceImp::Echo(NetPacket::ptr pack, const EchoRequest& request, EchoResponse& resp) {
+void GameServiceImp::Echo(Connection::ptr pack, const EchoRequest& request, EchoResponse& resp) {
 	resp.set_msg(request.msg());
 
 	//统计

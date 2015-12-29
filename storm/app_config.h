@@ -35,6 +35,13 @@ struct ServerConfig {
 
 	map<string, ServiceConfig> services;
 };
+
+struct ClientConfig {
+	string registeryAddress;
+	uint32_t connectTimeOut;
+	uint32_t asyncThreadNum;
+};
+
 }
 
 #endif

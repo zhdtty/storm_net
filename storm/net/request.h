@@ -27,16 +27,16 @@ enum RespStatus {
 };
 
 struct ReqMessage {
-	ReqMessage():invokeType(InvokeType_Sync), status(RespStatus_TimeOut), resp(NULL), proxy(NULL), handler(NULL) {}
+	ReqMessage():invokeType(InvokeType_Sync), sockId(0), status(RespStatus_TimeOut), cb(NULL), resp(NULL), handler(NULL) {}
 
 	uint32_t invokeType;
+	uint32_t sockId;
 	RespStatus status;
 	ServiceProxyCallBackPtr cb;
 
 	RpcRequest req;
 	RpcResponse* resp;
 
-	ServiceProxy* proxy;
 	RecvPacketHandler* handler;
 };
 

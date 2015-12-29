@@ -5,9 +5,9 @@
 
 class GameServiceImp : public GameService {
 public:
-	virtual void doClose(NetPacket::ptr pack);
+	virtual void doClose(Connection::ptr pack);
 
-	virtual void Echo(NetPacket::ptr pack, const EchoRequest& req, EchoResponse& resp);
+	virtual void Echo(Connection::ptr pack, const EchoRequest& req, EchoResponse& resp);
 };
 
 #endif

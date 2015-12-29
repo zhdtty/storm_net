@@ -55,10 +55,10 @@ int Application::run(int argc, char** argv) {
 			return -1;
 		}
 
-		m_sockServer->show();
-		m_sockServer->start();
-		m_connector->start();
 		LOG("size of Server %ld\n", sizeof(*m_sockServer));
+		//m_sockServer->show();
+		m_sockServer->start();
+		m_connector->start(m_clientConfig);
 
 		while (!m_sockServer->isTerminate() && !m_connector->isTerminate()) {
 			if (g_exit) {
@@ -95,10 +95,19 @@ void Application::parseConfig(int argc, char** argv) {
 	const CConfig& svrCfg = config.getSubConfig("server");
 	parseServerConfig(svrCfg);
 
+	const CConfig& clientCfg = config.getSubConfig("client");
+	parseClientConfig(clientCfg);
+
 	killOldProcess();
 	if (option.isStop()) {
 		exit(0);
 	}
+}
+
+void Application::parseClientConfig(const CConfig& cfg) {
+//	m_clientConfig.registeryAddress = cfg.getCfg("registery");
+	m_clientConfig.asyncThreadNum = cfg.getCfg<uint32_t>("asyncThread", 1);
+	m_clientConfig.connectTimeOut = cfg.getCfg<uint32_t>("connectTimeOut", 3000);
 }
 
 void Application::parseServerConfig(const CConfig& cfg) {

@@ -19,7 +19,7 @@ void SocketListener::setProtocol(ProtocolType protocol) {
 	m_handler->setProtocol(protocol);
 }
 
-void SocketListener::doRequest(NetPacket::ptr pack) {
+void SocketListener::doRequest(Connection::ptr pack) {
 	int ret = 0;
 	RpcRequest req;
 	RpcResponse resp;
@@ -69,7 +69,7 @@ void SocketListener::terminate() {
 }
 
 void SocketListener::process() {
-	NetPacket::ptr pack;
+	Connection::ptr pack;
 	while (!m_handler->m_term) {
 		if (m_handler->m_packets.pop_front(pack, -1)) {
 			if (pack->type == Net_Close) {
@@ -114,14 +114,19 @@ void SocketHandler::doEmptyClose(uint32_t id) {
 void SocketHandler::onAccept(int id, int fd, const string& ip, int port) {
 	LOG("%s accept %d %d %s:%d\n", m_config.serviceName.c_str(), id, fd, ip.c_str(), port);
 	uint32_t now = UtilTime::getNow();
-	m_conList.add(id, now);
+	if (m_conList.size() >= m_config.maxConnections) {
+		LOG("max Connection\n");
+		m_sockServer->close(id, CloseType_Server);
+	} else {
+		m_conList.add(id, now);
+	}
 }
 
 void SocketHandler::onClose(int id, int fd, const string& ip, int port, int closeType) {
 	LOG("%s close %d %d %s:%d, close type %d\n", m_config.serviceName.c_str(), id, fd, ip.c_str(), port, closeType);
 	m_conList.del(id);
 	m_timelist.del(id);
-	NetPacket::ptr pack(new NetPacket);
+	Connection::ptr pack(new Connection);
 	pack->type = Net_Close;
 	pack->id = id;
 	pack->fd = fd;
@@ -146,7 +151,7 @@ void SocketHandler::onData(int id, int fd, const string& ip, int port, IOBuffer:
 			m_sockServer->close(id);
 			break;
 		}
-		NetPacket::ptr pack(new NetPacket);
+		Connection::ptr pack(new Connection);
 		pack->type = Net_Packet;
 		pack->id = id;
 		pack->fd = fd;

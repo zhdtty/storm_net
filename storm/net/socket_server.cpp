@@ -143,7 +143,6 @@ void SocketServer::handleAccept(Socket* s) {
 				continue;
 			}
 		}
-		//TODO listener 限制
 
 		Socket* ns = getNewSocket();
 		if (ns == NULL) {
@@ -290,7 +289,6 @@ void SocketServer::poll() {
 			}
 		}
 
-		//
 		for (map<string, SocketHandler::ptr>::iterator it = m_handlers.begin(); it != m_handlers.end(); ++it) {
 			SocketHandler::ptr handle = it->second;
 			handle->checkTimeOut();

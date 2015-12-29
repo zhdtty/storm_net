@@ -17,8 +17,8 @@ namespace Storm {
 class SocketServer;
 class SocketHandler;
 
-struct NetPacket {
-	typedef std::shared_ptr<NetPacket> ptr;
+struct Connection {
+	typedef std::shared_ptr<Connection> ptr;
 	int type;
 	int id;
 	int fd;
@@ -38,13 +38,13 @@ public:
 
 	virtual bool initialize() {return true;}
 
-	virtual void doClose(NetPacket::ptr pack) {}
+	virtual void doClose(Connection::ptr pack) {}
 
 	//自定义协议重载doRequest
-	virtual void doRequest(NetPacket::ptr pack);
+	virtual void doRequest(Connection::ptr pack);
 
 	//RPC协议重载doRpcRequest
-	virtual int doRpcRequest(NetPacket::ptr pack, const RpcRequest& req, RpcResponse& resp) {
+	virtual int doRpcRequest(Connection::ptr pack, const RpcRequest& req, RpcResponse& resp) {
 		return 0;
 	}
 
@@ -104,7 +104,7 @@ private:
 	SocketServer* m_sockServer;
 	ProtocolType	m_protocol;
 	vector<SocketListener::ptr> m_listeners;
-	LockQueue<NetPacket::ptr> m_packets;
+	LockQueue<Connection::ptr> m_packets;
 	TimeList<uint32_t, uint32_t> m_conList;  //新连接检测
 	TimeList<uint32_t, uint32_t> m_timelist; //超时检测
 };

@@ -40,15 +40,17 @@ SocketConnector::SocketConnector()
 	m_socket->status = Socket_Status_Listen;
 
 	m_poll.addEvent(fd, EP_READ, m_socket);
+
+	m_updateProxyTime = 0;
+	m_updateInterval = 60;
 }
 
-void SocketConnector::start() {
-	setUpTimeOut();
+void SocketConnector::start(const ClientConfig& cfg) {
+	setUpTimeOut(cfg.connectTimeOut);
 	m_netThread = std::thread(&SocketConnector::poll, this);
 
-	LOG("socket connector start\n");
 	//异步线程启动
-	for (uint32_t i = 0; i < 1; ++i) {
+	for (uint32_t i = 0; i < cfg.asyncThreadNum; ++i) {
 		m_asyncThreads.push_back(std::thread(&SocketConnector::loop, this));
 	}
 }
@@ -65,51 +67,29 @@ void SocketConnector::exit() {
     }
 
 	//异步线程停止
-	wakeupAll();
+	m_packets.wakeup();
 	for (uint32_t i = 0; i < m_asyncThreads.size(); ++i) {
 		m_asyncThreads[i].join();
 	}
-}
 
-void SocketConnector::loop() {
-	bool empty = false;
-	while (!m_exit) {
-		for (map<string, SocketClient::ptr>::iterator it =  m_clients.begin(); it != m_clients.end(); ++it) {
-			it->second->process();
-		}
-		empty = isAllEmpty();
-		if (empty) {
-			for (map<string, SocketClient::ptr>::iterator it =  m_clients.begin(); it != m_clients.end(); ++it) {
-				it->second->doTimeOut();
-			}
-			ScopeMutex<Notifier> lock(m_notifier);
-			m_notifier.timedwait(500);
-		}
-	}
-	for (map<string, SocketClient::ptr>::iterator it =  m_clients.begin(); it != m_clients.end(); ++it) {
+	//proxy的终止
+	for (map<string, ServiceProxy*>::iterator it = m_proxys.begin(); it != m_proxys.end(); ++it) {
 		it->second->terminate();
 	}
 }
 
-void SocketConnector::wakeup() {
-	ScopeMutex<Notifier> lock(m_notifier);
-	m_notifier.signal();
-}
-
-void SocketConnector::wakeupAll()  {
-	ScopeMutex<Notifier> lock(m_notifier);
-	m_notifier.broadcast();
-}
-
-bool SocketConnector::isAllEmpty() {
-	for (map<string, SocketClient::ptr>::iterator it =  m_clients.begin(); it != m_clients.end(); ++it) {
-		if (it->second->m_packets.empty() == false) {
-			return false;
+void SocketConnector::loop() {
+	RecvPacket::ptr pack;
+	while (!m_exit) {
+		if (m_packets.pop_front(pack, -1)) {
+			if (pack->type == Net_Close) {
+				pack->proxy->doClose(pack);
+			} else {
+				pack->proxy->doRequest(pack);
+			}
 		}
 	}
-	return true;
 }
-
 
 inline Socket* SocketConnector::getNewSocket() {
 	int id = reserveId();
@@ -165,7 +145,7 @@ void SocketConnector::forceClose(Socket* s, int closeType) {
 
 	//通知
 	if (s->type == Socket_Type_ToOut) {
-		s->client->onClose(closeType);
+		s->proxy->onClose(s->id, closeType);
 	}
 }
 
@@ -204,8 +184,8 @@ void SocketConnector::sendSocket(int id, IOBuffer::ptr buffer) {
 }
 
 void SocketConnector::connectSocket(Socket* s) {
-	uint32_t now = UtilTime::getNow();
-	m_connTimeout.add(s->id, now);
+	uint64_t nowMs = UtilTime::getNowMS();
+	m_connTimeout.add(s->id, nowMs);
 	bool success = false;
 	do {
 		int fd = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -236,7 +216,7 @@ void SocketConnector::connectSocket(Socket* s) {
 		if (status == 0) {
 			//连接成功
 			s->status = Socket_Status_Connected;
-			s->client->onConnect(s->id);
+			s->proxy->onConnect(s->id);
 			m_poll.addEvent(fd, EP_READ, s);
 			handleWrite(s);
 			m_connTimeout.del(s->id);
@@ -249,7 +229,7 @@ void SocketConnector::connectSocket(Socket* s) {
 	if (!success) {
 		LOG("socket-server: connect socket error\n");
 		s->status = Socket_Status_Reserve;
-		s->client->onClose(CloseType_ConnectFail);
+		s->proxy->onClose(s->id, CloseType_ConnectFail);
 		m_connTimeout.del(s->id);
 	}
 }
@@ -275,7 +255,7 @@ void SocketConnector::handleConnect(Socket* s)
 	s->status = Socket_Status_Connected;
 	m_poll.delEvent(s->fd, EP_WRITE, s);
 
-	s->client->onConnect(s->id);
+	s->proxy->onConnect(s->id);
 	m_poll.addEvent(s->fd, EP_READ, s);
 	handleWrite(s);
 	m_connTimeout.del(s->id);
@@ -319,7 +299,7 @@ void SocketConnector::handleRead(Socket* s) {
 	if (needClose) {
 		forceClose(s, CloseType_Server);
 	} else {
-		s->client->onData(buffer);
+		s->proxy->onData(s->id, buffer);
 	}
 }
 
@@ -370,10 +350,7 @@ void SocketConnector::handleWrite(Socket* s) {
 
 void SocketConnector::poll() {
 	while (!m_exit) {
-		int num = m_poll.wait(m_event, MAX_EVENT);
-		if (num <= 0) {
-			continue ;
-		}
+		int num = m_poll.wait(m_event, MAX_EVENT, 100);
 		for (int i = 0; i < num; ++i) {
 			SocketEvent* event = &m_event[i];
 			Socket* s = (Socket*)(event->pUd);
@@ -400,6 +377,33 @@ void SocketConnector::poll() {
 					break;
 			}
 		}
+		doTimer();
+	}
+}
+
+void SocketConnector::doTimer() {
+	uint64_t nowMs = UtilTime::getNowMS();
+	uint32_t now = UtilTime::getNow();
+
+	//连接超时
+	m_connTimeout.timeout(nowMs);
+
+	//各proxy的请求超时
+	ScopeMutex<Mutex> lock(m_mutex);
+	for (map<string, ServiceProxy*>::iterator it = m_proxys.begin(); it != m_proxys.end(); ++it) {
+		it->second->doTimeOut();
+	}
+
+	if (now > m_updateProxyTime) {
+		updateProxyEndPoints();
+		m_updateProxyTime = now + m_updateInterval;
+	}
+}
+
+void SocketConnector::updateProxyEndPoints() {
+	ScopeMutex<Mutex> lock(m_mutex);
+	for (map<string, ServiceProxy*>::iterator it = m_proxys.begin(); it != m_proxys.end(); ++it) {
+		it->second->updateEndPoints();
 	}
 }
 
@@ -436,45 +440,33 @@ void SocketConnector::terminate() {
 	m_netThread.join();
 }
 
-SocketClient::ptr SocketConnector::getSocketClient(const string& serviceName, const string& host, uint32_t port) {
-	string key = serviceName + "@" + host + ":" + UtilString::tostr(port);
-
-	map<string, SocketClient::ptr>::iterator it =  m_clients.find(key);
-	if (it != m_clients.end()) {
-		return it->second;
-	}
-	SocketClient::ptr client(new SocketClient);
-	client->m_serviceName = serviceName;
-	client->m_host = host;
-	client->m_port = port;
-	client->m_connector = this;
-
+uint32_t SocketConnector::getNewClientSocket(SocketProxy* proxy, const string& host, uint32_t port) {
 	Socket* s = getNewSocket();
 	if (s == NULL) {
-		LOG("error when getSocket %s\n", key.c_str());
-		return client;
+		LOG("error when getSocket %s %d\n", host.c_str(), port);
+		return 0;
 	}
-	client->m_id = s->id;
 
 	s->type = Socket_Type_ToOut;
 	s->status = Socket_Status_Reserve;
-	s->client = client.get();
+	s->proxy = proxy;
 	s->ip = host;
 	s->port = port;
 
-	m_clients.insert(make_pair(key, client));
-
-	return client;
+	return s->id;
 }
 
-void SocketConnector::setUpTimeOut() {
-	//TODO 连接超时
-	m_connTimeout.setTimeout(3);
+void SocketConnector::setUpTimeOut(uint32_t timeout) {
+	m_connTimeout.setTimeout(timeout);
 	m_connTimeout.setFunction(std::bind(&SocketConnector::doConnectTimeOut, this, std::placeholders::_1));
 }
 
 void SocketConnector::doConnectTimeOut(uint32_t id) {
 	close(id, CloseType_ConnectFail);
+}
+
+void SocketConnector::pushBackPacket(RecvPacket::ptr packet) {
+	m_packets.push_back(packet);
 }
 
 }

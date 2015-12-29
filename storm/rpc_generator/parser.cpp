@@ -186,12 +186,12 @@ void Parser::printServiceHead(Service& s) {
 	m_oss << "public:" << endl;
 	m_oss << "\t" << "virtual ~" << s.m_serviceName << "(){}" << endl;
 	m_oss << endl;
-	m_oss << "\t" << "virtual int doRpcRequest(NetPacket::ptr pack, const RpcRequest& req, RpcResponse& resp);" << endl;
+	m_oss << "\t" << "virtual int doRpcRequest(Connection::ptr conn, const RpcRequest& req, RpcResponse& resp);" << endl;
 
 	m_oss << endl;
 	for (uint32_t i = 0; i < s.m_functions.size(); ++i) {
 		Function& f = s.m_functions[i];
-		m_oss << "\t" << "virtual void " << f.m_name << "(NetPacket::ptr pack, const "
+		m_oss << "\t" << "virtual void " << f.m_name << "(Connection::ptr conn, const "
 			<< f.m_inputClassName << "& " << f.m_inputParamName << ", " << f.m_outputClassName
 			<< "& " << f.m_outputParamName << ") {}" << endl;
 	}
@@ -228,14 +228,16 @@ void Parser::printServiceHead(Service& s) {
 	for (uint32_t i = 0; i < s.m_functions.size(); ++i) {
 		Function& f = s.m_functions[i];
 		m_oss << "\t" << "virtual void callback_" << f.m_name << "(int ret, const "
-			<< f.m_outputClassName << "& " << f.m_outputParamName << ") {}" << endl;
+			<< f.m_outputClassName << "& " << f.m_outputParamName << ") {" << endl;
+		tab(2) << "throw std::runtime_error(\"no implement callback_" << f.m_name << "\");" << endl;
+		tab(1) << "};" << endl;
 	}
 	m_oss << "};" << endl;
 } 
 
 void Parser::printServiceSource(Service& s) {
 	//Service
-	m_oss << "int " << s.m_serviceName << "::doRpcRequest(NetPacket::ptr pack, const RpcRequest& req, RpcResponse& resp) {" << endl;
+	m_oss << "int " << s.m_serviceName << "::doRpcRequest(Connection::ptr conn, const RpcRequest& req, RpcResponse& resp) {" << endl;
 	m_oss << "\t" << "switch (req.proto_id()) {" << endl;
 	for (uint32_t i = 0; i < s.m_functions.size(); ++i) {
 		Function& f = s.m_functions[i];
@@ -247,7 +249,7 @@ void Parser::printServiceSource(Service& s) {
 		tab(4) << "LOG(\"error\\n\");" << endl;
 		tab(4) << "return RespStatus_CoderError;" << endl;
 		tab(3) << "}" << endl;
-		tab(3) << f.m_name << "(pack, request, response);" << endl;
+		tab(3) << f.m_name << "(conn, request, response);" << endl;
 		tab(3) << "if (req.invoke_type() != InvokeType_OneWay) {" << endl;
 		tab(4) << "if (!response.SerializeToString(resp.mutable_response())) {" << endl;
 		tab(5) << "LOG(\"error\\n\");" << endl;

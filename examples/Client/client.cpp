@@ -49,7 +49,7 @@ void Client::loop() {
 
 	//单向调用
 	g_prx->async_Echo(NULL, request);
-//	sleep(1);
+	//sleep(1);
 }
 
 int main(int argc, char** argv) {

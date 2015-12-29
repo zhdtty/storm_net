@@ -6,7 +6,6 @@
 #include "common_header.h"
 
 #include "socket_define.h"
-#include "socket_client.h"
 #include "socket_util.h"
 #include "socket_poller.h"
 #include "service_proxy.h"
@@ -16,6 +15,8 @@
 #include "util/util_timelist.h"
 
 #include <map>
+
+#include "app_config.h"
 
 #define MAX_CLIENT 1024
 #define MAX_EVENT  1024
@@ -28,14 +29,15 @@ public:
 	~SocketConnector();
 
 	void poll();
-	void start();
+	void start(const ClientConfig& cfg);
 
-	SocketClient::ptr getSocketClient(const string& serviceName, const string& host, uint32_t port);
+	uint32_t getNewClientSocket(SocketProxy* proxy, const string& host, uint32_t port);
 
 	void send(int id, IOBuffer::ptr buffer);
 	void close(int id, uint32_t closeType = CloseType_Client);
 	void terminate();
 	bool isTerminate() { return m_exit; }
+	void doTimer();
 
 	template <typename T>
 	T* stringToPrx(const string& serviceName) {
@@ -52,11 +54,10 @@ public:
 		m_proxys.insert(std::make_pair(serviceName, prx));
 		return prx;
 	}
+	void updateProxyEndPoints();
 
 	void loop();
-	void wakeup();
-	void wakeupAll();
-	bool isAllEmpty();
+	void pushBackPacket(RecvPacket::ptr packet);
 
 private:
     int reserveId();
@@ -79,7 +80,7 @@ private:
 	void handleWrite(Socket* s);
 	void handleConnect(Socket* s);
 
-	void setUpTimeOut();
+	void setUpTimeOut(uint32_t timeout);
 	void doConnectTimeOut(uint32_t id);
 
 private:
@@ -96,18 +97,18 @@ private:
 	ObjectPool<IOBuffer> m_bufferPool;
 	std::thread m_netThread;
 
-	//key: service name, ip, port
-	map<string, SocketClient::ptr> m_clients;
-
 	//proxys
 	map<string, ServiceProxy*> m_proxys;
 	Mutex m_mutex;
 
 	//异步业务线程
 	vector<std::thread> m_asyncThreads;
-	Notifier m_notifier;
 
-	TimeList<uint32_t, uint32_t> m_connTimeout; //连接超时队列
+	TimeList<uint32_t, uint64_t> m_connTimeout; //连接超时队列
+	LockQueue<RecvPacket::ptr> m_packets;
+
+	uint32_t m_updateProxyTime;
+	uint32_t m_updateInterval;
 };
 
 }

@@ -29,6 +29,10 @@ public:
 		TimeType time;
 	};
 
+	size_t size() {
+		return m_list.size();
+	}
+
 public:
 
 //	TimeList(TimeType timeout):m_timeout(timeout) {}

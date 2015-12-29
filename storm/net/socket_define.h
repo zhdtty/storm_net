@@ -8,8 +8,9 @@ namespace Storm {
 typedef std::function<int (IOBuffer::ptr, string&)> ProtocolType;
 
 class SocketListener;
-class SocketClient;
 class SocketHandler;
+class ServiceProxy;
+class SocketProxy;
 
 enum Socket_Type {
 	Socket_Type_Listen,		//监听
@@ -51,14 +52,34 @@ struct SocketCmd {
 	IOBuffer::ptr buffer;
 };
 
+struct RecvPacket {
+	typedef std::shared_ptr<RecvPacket> ptr;
+	uint32_t id;
+	uint32_t type;
+	uint32_t closeType;
+	string buffer;
+	SocketProxy* proxy;
+};
+
+class SocketProxy {
+public:
+	virtual ~SocketProxy(){};
+	virtual void onConnect(uint32_t id) = 0;
+	virtual void onData(uint32_t id, IOBuffer::ptr buffer) = 0;
+	virtual void onClose(uint32_t id, uint32_t closeType) = 0;
+
+	virtual void doClose(RecvPacket::ptr pack) = 0;
+	virtual void doRequest(RecvPacket::ptr pack) = 0;
+};
+
 struct Socket {
-	Socket():id(0), fd(-1), status(Socket_Status_Idle), handler(NULL), client(NULL) {}
+	Socket():id(0), fd(-1), status(Socket_Status_Idle), handler(NULL), proxy(NULL) {}
 	int id;
 	int fd;
 	int type;
 	int status;
 	SocketHandler* handler;
-	SocketClient* client;
+	SocketProxy* proxy;
 	string ip;
 	int port;
 

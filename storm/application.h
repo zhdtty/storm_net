@@ -36,6 +36,8 @@ protected:
 private:
 	void parseConfig(int argc, char** argv);
 	void parseServerConfig(const CConfig& cfg);
+	void parseClientConfig(const CConfig& cfg);
+
 	void savePidFile();
 	void removePidFile();
 	void killOldProcess();
@@ -44,6 +46,7 @@ private:
 
 protected:
 	ServerConfig m_config;
+	ClientConfig m_clientConfig;
 	static SocketServer* m_sockServer;
 	static SocketConnector* m_connector;
 };
