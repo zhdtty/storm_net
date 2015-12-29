@@ -38,6 +38,7 @@ public:
 	void close(int id, uint32_t closeType = CloseType_Server);
 	void terminate();
 	bool isTerminate() { return m_exit; }
+	void doTimer();
 
     void show();
 
@@ -81,6 +82,9 @@ private:
 
     char m_buffer[MAX_INFO];
 	std::thread m_netThread;
+
+	uint32_t m_heatBeatTime;
+	uint32_t m_heatBeatInterval;
 };
 
 template<typename T>

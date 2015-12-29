@@ -91,6 +91,7 @@ bool ServiceProxy::parseFromString(const string& config) {
 	return true;
 }
 
+//TODO
 void ServiceProxy::updateEndPoints() {
 	if (!m_needLocator) {
 		return;

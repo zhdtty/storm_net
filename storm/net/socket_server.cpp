@@ -15,6 +15,8 @@
 #include <sys/eventfd.h>
 #include <unistd.h>
 
+#include "util/util_time.h"
+
 
 #define HASH_ID(id) (((unsigned)id) % MAX_SOCKET)
 
@@ -36,6 +38,9 @@ SocketServer::SocketServer()
 	m_socket->status = Socket_Status_Listen;
 
 	m_poll.addToRead(fd, m_socket);
+
+	m_heatBeatTime = 0;
+	m_heatBeatInterval = 60;
 }
 
 void SocketServer::show() {
@@ -288,11 +293,22 @@ void SocketServer::poll() {
 					break;
 			}
 		}
+		doTimer();
+	}
+}
 
+void SocketServer::doTimer() {
+	for (map<string, SocketHandler::ptr>::iterator it = m_handlers.begin(); it != m_handlers.end(); ++it) {
+		SocketHandler::ptr handle = it->second;
+		handle->checkTimeOut();
+	}
+
+	uint32_t now = UtilTime::getNow();
+	if (now >= m_heatBeatTime) {
 		for (map<string, SocketHandler::ptr>::iterator it = m_handlers.begin(); it != m_handlers.end(); ++it) {
-			SocketHandler::ptr handle = it->second;
-			handle->checkTimeOut();
+			it->second->headBeat();
 		}
+		m_heatBeatTime = now + m_heatBeatInterval;
 	}
 }
 

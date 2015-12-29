@@ -37,6 +37,7 @@ public:
 	virtual ~SocketListener(){}
 
 	virtual bool initialize() {return true;}
+	virtual void destroy() {}
 
 	virtual void doClose(Connection::ptr pack) {}
 
@@ -92,9 +93,11 @@ public:
 	bool checkIpValid(const string& sHost) { return true; }
 
 	void setUpTimeOut();
-	void checkTimeOut();
 	void doTimeClose(uint32_t id);
 	void doEmptyClose(uint32_t id);
+
+	void checkTimeOut();
+	void headBeat();
 
 private:
 	static const uint32_t kMaxThreadNum = 100;

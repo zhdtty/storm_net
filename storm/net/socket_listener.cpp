@@ -65,6 +65,7 @@ void SocketListener::showLen() {
 }
 
 void SocketListener::terminate() {
+	destroy();
 	m_thread.join();
 }
 
@@ -101,6 +102,11 @@ void SocketHandler::checkTimeOut() {
 	uint32_t now = UtilTime::getNow();
 	m_conList.timeout(now);
 	m_timelist.timeout(now);
+}
+
+//TODO
+void SocketHandler::headBeat() {
+
 }
 
 void SocketHandler::doTimeClose(uint32_t id) {
