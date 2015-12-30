@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(Hope)
+project(Storm)
 
 
 #路径设置
@@ -22,7 +22,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -std=c++11 -O2 -Wall")
 
 #依赖包
 find_package(Protobuf REQUIRED)
+find_package(MYSQLCLIENT REQUIRED)
 
+#cmake
+install(DIRECTORY cmake DESTINATION .)
 
 add_subdirectory(storm)
 add_subdirectory(examples EXCLUDE_FROM_ALL)
