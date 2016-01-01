@@ -7,7 +7,7 @@
 
 #example
 	以echo服务为例
-	* 1.定义Echo.proto
+	1.定义Echo.proto
 
 		syntax = "proto2";
 
@@ -21,7 +21,7 @@
 			optional string msg = 1;
 		};
 
-	* 2.EchoService.rpc
+	2.EchoService.rpc
 		#include "Echo.proto"
 
 		using namespace Common;
@@ -33,8 +33,8 @@
 		其中service表示一个服务，Echo是服务中的一个接口，EchoRequest和EchoResponse就是Echo.proto中定义的请求和
 		相应消息结构， 后面的 = 1跟Echo这个方法对应，就是这个方法的协议id，在传输过程中实际传送的不是函数名字，
 		而是这个id。
-	* 3. 运行rpc2cpp EchoService.rpc 将会生成EchoService.cpp和EchoService.h
-	* 4. 实现接口
+	3. 运行rpc2cpp EchoService.rpc 将会生成EchoService.cpp和EchoService.h
+	4. 实现接口
 		Server端继承EchoService这个类，实现Echo接口
 		class EchoServiceImp : public EchoService {
 		public:
