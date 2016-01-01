@@ -9,28 +9,26 @@
 	以echo服务为例
 	* 1.定义Echo.proto
 
-	<pre><code>
-	syntax = "proto2";
+		syntax = "proto2";
 
-	package Common;
+		package Common;
 
-	message EchoRequest {
-		optional string msg = 1;
-	};
+		message EchoRequest {
+			optional string msg = 1;
+		};
 
-	message EchoResponse {
-		optional string msg = 1;
-	};
-	</code></pre>
+		message EchoResponse {
+			optional string msg = 1;
+		};
 
 	* 2.EchoService.rpc
-		`#include "Echo.proto"
+		#include "Echo.proto"
 
 		using namespace Common;
 
 		service EchoService {
 			Echo(EchoRequest req, EchoResponse resp) = 1;
-		};`
+		};
 
 		其中service表示一个服务，Echo是服务中的一个接口，EchoRequest和EchoResponse就是Echo.proto中定义的请求和
 		相应消息结构， 后面的 = 1跟Echo这个方法对应，就是这个方法的协议id，在传输过程中实际传送的不是函数名字，
@@ -38,35 +36,35 @@
 	* 3. 运行rpc2cpp EchoService.rpc 将会生成EchoService.cpp和EchoService.h
 	* 4. 实现接口
 		Server端继承EchoService这个类，实现Echo接口
-		` class EchoServiceImp : public EchoService {
+		class EchoServiceImp : public EchoService {
 		public:
 
 			virtual void Echo(Connection::ptr conn, const EchoRequest& req, EchoResponse& resp);
-		};`
+		};
 
-		`void EchoServiceImp::Echo(Connection::ptr conn, const EchoRequest& request, EchoResponse& resp) {
+		void EchoServiceImp::Echo(Connection::ptr conn, const EchoRequest& request, EchoResponse& resp) {
 			resp.set_msg(request.msg());
-		}`
+		}
 
 		Client(调用方)获得一个ServiceProxy代理类，之后就可以请求服务了
-		`EchoServiceProxy* g_prx = m_connector->stringToPrx<EchoServiceProxy>("EchoService@tcp -h 127.0.0.1 -p 1234");`
+		EchoServiceProxy* g_prx = m_connector->stringToPrx<EchoServiceProxy>("EchoService@tcp -h 127.0.0.1 -p 1234");
 		同步调用
-		`EchoResponse response;
+		EchoResponse response;
 		int ret = g_prx->Echo(request, response);
-		cout << response.msg() << endl;`
+		cout << response.msg() << endl;
 
 		//异步调用
-		`class EchoServiceProxyCB : public EchoServiceProxyCallBack {
+		class EchoServiceProxyCB : public EchoServiceProxyCallBack {
 		public:
 			void callback_Echo(int ret, const EchoResponse& response) {
 				cout << response.msg() << endl;
 			}
 		};
 		ServiceProxyCallBackPtr cb(new EchoServiceProxyCB);
-		g_prx->async_Echo(cb, request);`
+		g_prx->async_Echo(cb, request);
 
 		//单向调用
-		`g_prx->async_Echo(NULL, request);`
+		g_prx->async_Echo(NULL, request);
 
 		
 
