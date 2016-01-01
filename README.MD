@@ -36,6 +36,7 @@
 	3. 运行rpc2cpp EchoService.rpc 将会生成EchoService.cpp和EchoService.h
 	4. 实现接口
 		Server端继承EchoService这个类，实现Echo接口
+
 		class EchoServiceImp : public EchoService {
 		public:
 
@@ -47,19 +48,22 @@
 		}
 
 		Client(调用方)获得一个ServiceProxy代理类，之后就可以请求服务了
+
 		EchoServiceProxy* g_prx = m_connector->stringToPrx<EchoServiceProxy>("EchoService@tcp -h 127.0.0.1 -p 1234");
+
 		同步调用
 		EchoResponse response;
 		int ret = g_prx->Echo(request, response);
 		cout << response.msg() << endl;
 
-		//异步调用
+		//异步调用(实现cb类)
 		class EchoServiceProxyCB : public EchoServiceProxyCallBack {
 		public:
 			void callback_Echo(int ret, const EchoResponse& response) {
 				cout << response.msg() << endl;
 			}
 		};
+
 		ServiceProxyCallBackPtr cb(new EchoServiceProxyCB);
 		g_prx->async_Echo(cb, request);
 
