@@ -8,7 +8,8 @@
 #example
 	以echo服务为例
 	* 1.定义Echo.proto
-	syntax = "proto2";
+
+	`syntax = "proto2";
 
 	package Common;
 
@@ -18,7 +19,7 @@
 
 	message EchoResponse {
 		optional string msg = 1;
-	};
+	};`
 
 	* 2.EchoService.rpc
 		`#include "Echo.proto"
