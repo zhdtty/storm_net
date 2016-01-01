@@ -71,12 +71,12 @@ MySqlConn::MySqlConn(const std::string& host,
 				     const std::string& charset,
 				     uint32_t port)
 	:m_bConnected(false) {
-	m_config.sHost = host;
-	m_config.sUser = user;
-	m_config.sPasswd = passwd;
-	m_config.sDBName = db;
-	m_config.sCharset = charset;
-	m_config.iPort = port;
+	m_config.host = host;
+	m_config.user = user;
+	m_config.passwd = passwd;
+	m_config.dbname = db;
+	m_config.charset = charset;
+	m_config.port = port;
 }
 
 MySqlConn::~MySqlConn() {
@@ -89,7 +89,7 @@ void MySqlConn::setConfig(const DBConfig& config) {
 }
 
 inline void MySqlConn::disconnect() {
-	if (m_bConnected) {
+	if (m_mysql != NULL) {
 		mysql_close(m_mysql);
 		m_mysql = NULL;
 		m_bConnected = false;
@@ -102,16 +102,26 @@ inline void MySqlConn::printError() {
 }
 
 void MySqlConn::connect() {
-	if (m_bConnected) {
-		return ;
-	}
+	disconnect();
 	m_mysql = mysql_init(NULL);
 	if (m_mysql == NULL) {
 		throw std::runtime_error("mysql_init: " + string(mysql_error(m_mysql)));
 	}
 
-	if (mysql_real_connect(m_mysql, m_config.sHost.c_str(), m_config.sUser.c_str(), m_config.sPasswd.c_str(), m_config.sDBName.c_str(),
-						   m_config.iPort, NULL, 0) == NULL) {
+	//设置连接、读取、写入超时
+	int timeout = 5;
+	if (mysql_options(m_mysql, MYSQL_OPT_CONNECT_TIMEOUT, &timeout)) {
+		throw std::runtime_error("mysql_options: " + string(mysql_error(m_mysql)));
+	}
+	if (mysql_options(m_mysql, MYSQL_OPT_READ_TIMEOUT, &timeout)) {
+		throw std::runtime_error("mysql_options: " + string(mysql_error(m_mysql)));
+	}
+	if (mysql_options(m_mysql, MYSQL_OPT_WRITE_TIMEOUT, &timeout)) {
+		throw std::runtime_error("mysql_options: " + string(mysql_error(m_mysql)));
+	}
+
+	if (mysql_real_connect(m_mysql, m_config.host.c_str(), m_config.user.c_str(), m_config.passwd.c_str(), m_config.dbname.c_str(),
+						   m_config.port, NULL, 0) == NULL) {
 		mysql_close(m_mysql);
 		m_mysql = NULL;
 		throw std::runtime_error("mysql_real_connect: " + string(mysql_error(m_mysql)));
@@ -119,10 +129,8 @@ void MySqlConn::connect() {
 
 	char value = 1;
 	mysql_options(m_mysql, MYSQL_OPT_RECONNECT, &value);
-	if (mysql_set_character_set(m_mysql, m_config.sCharset.c_str()) != 0) {
-		//printError();
+	if (mysql_set_character_set(m_mysql, m_config.charset.c_str()) != 0) {
 		throw std::runtime_error("mysql: " + string(mysql_error(m_mysql)));
-		mysql_set_character_set(m_mysql, "utf8");
 	}
 	m_bConnected = true;
 }
@@ -135,18 +143,16 @@ void MySqlConn::execute(const std::string& sql) {
 	int ret = mysql_real_query(m_mysql, sql.c_str(), sql.length());
 	if (ret != 0) {
 		//printError();
-		throw std::runtime_error("mysql_real_query: " + string(mysql_error(m_mysql)) + ", " + sql);
+		throw std::runtime_error("mysql_real_query: " + string(mysql_error(m_mysql)));
 	}
 }
 
 MySqlResult::ptr MySqlConn::query(const std::string& sql) {
 	execute(sql);
 	MYSQL_RES* result = mysql_store_result(m_mysql);
-	if (result == NULL) {
-		if (mysql_field_count(m_mysql) != 0) {
-			//printError();
-			throw std::runtime_error("mysql_store_result: " + string(mysql_error(m_mysql)) + ", " + sql);
-		}
+	if (result == NULL  && mysql_field_count(m_mysql) != 0) {
+		//printError();
+		throw std::runtime_error("mysql_store_result: " + string(mysql_error(m_mysql)) + ", " + sql);
 	}
 	//printResult(result);
 	return MySqlResult::ptr(new MySqlResult(result));

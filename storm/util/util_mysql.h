@@ -15,14 +15,14 @@
 namespace Storm {
 
 struct DBConfig {
-	std::string sHost;
-	std::string sUser;
-	std::string sPasswd;
-	std::string sDBName;
-	std::string sCharset;
-	uint32_t iPort;
+	std::string host;
+	std::string user;
+	std::string passwd;
+	std::string dbname;
+	std::string charset;
+	uint32_t port;
 
-	DBConfig():sCharset("utf8"), iPort(3306){}
+	DBConfig():charset("utf8"), port(3306){}
 };
 
 class MySqlResult : public noncopyable {
@@ -61,7 +61,7 @@ public:
 			  const std::string& user,
 		      const std::string& passwd,
 		      const std::string& db,
-		      const std::string& charset,
+		      const std::string& charset = std::string("utf8"),
 		      uint32_t		     port = 3306);
 
 	~MySqlConn();
