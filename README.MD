@@ -9,7 +9,7 @@
 	以echo服务为例
 	* 1.定义Echo.proto
 
-	<!--lang: cpp--> 
+	<pre><code>
 	syntax = "proto2";
 
 	package Common;
@@ -21,6 +21,7 @@
 	message EchoResponse {
 		optional string msg = 1;
 	};
+	</code></pre>
 
 	* 2.EchoService.rpc
 		`#include "Echo.proto"
