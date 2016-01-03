@@ -98,8 +98,7 @@
 			  ./Client  -f client.conf
 
 #计划
-	1.sql拼接
-	2.log 类
-	3.http parser
-	4.asyncResponce
+	log 类
+	http parser
+	asyncResponce
 
