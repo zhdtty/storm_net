@@ -15,7 +15,7 @@ public:
 	friend class MySqlConn;
 	enum DB_TYPE {
 		DB_INT = 0,	//不需要escape
-		DB_STR = 1, //需要escapse
+		DB_STR = 1, //需要escape
 	};
 
 	template <typename T>
@@ -57,7 +57,7 @@ public:
 	}
 
 	SqlJoin& operator << (const SqlPair& p) {
-		addPair(p);
+		m_pairs.push_back(p);
 		return *this;
 	}
 private:
