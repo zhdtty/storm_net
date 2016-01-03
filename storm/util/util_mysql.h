@@ -5,12 +5,14 @@
 #include <map>
 #include <stdint.h>
 #include <string>
+#include <sstream>
 
 #include <my_global.h>
 #include <mysql.h>
 
 #include "noncopyable.h"
 #include "util_string.h"
+#include "util_sqljoin.h"
 
 namespace Storm {
 
@@ -72,7 +74,13 @@ public:
 
 	string escape(const string &s);
 	uint64_t getInsertId();
-	uint64_t getAffectedRows();
+	size_t getAffectedRows();
+
+	size_t update(const string& tableName, const SqlJoin& columns, const string& condition);
+	size_t insert(const string& tableName, const SqlJoin& columns);
+	size_t replace(const string& tableName, const SqlJoin& columns);
+	size_t deleteFrom(const string& tableName, const string& condition);
+
 
 private:
 	void connect();
@@ -83,6 +91,7 @@ private:
 private:
 	DBConfig 	m_config;
 	MYSQL* 		m_mysql;
+	ostringstream m_oss;
 	bool 		m_bConnected;
 };
 }
