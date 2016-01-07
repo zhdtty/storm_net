@@ -254,14 +254,20 @@ void ServiceProxy::doInvoke(ReqMessage* req) {
 
 	//异步请求req后面不一定用了，所以这里把invokeType复制
 	if (invokeType == InvokeType_Sync) {
-		req->handler->m_notifier.wait();
+		ScopeMutex<Notifier> lock(req->handler->m_notifier);
+		if (req->back == false) {
+			req->handler->m_notifier.wait();
+		}
 	}
 }
 
 // 1.同步请求只需唤醒调用线程 2.异步请求调用回调函数
 void ServiceProxy::finishInvoke(ReqMessage* req) {
 	if (req->invokeType == InvokeType_Sync) {
+		ScopeMutex<Notifier> lock(req->handler->m_notifier);
+		req->back = true;
 		req->handler->m_notifier.signal();
+		LOG("finishInvoke\n");
 		return;
 	} else if (req->invokeType == InvokeType_Async) {
 		//TODO 提供一个接受队列，塞到队列里，实现callback指定线程调用
