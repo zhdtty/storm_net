@@ -56,12 +56,11 @@ std::string MySqlResult::get(uint32_t iRow, const std::string& sFieldName) {
 }
 
 MySqlConn::MySqlConn()
-	:m_bConnected(false) {
+	:m_mysql(NULL), m_bConnected(false) {
 }
 
 MySqlConn::MySqlConn(const DBConfig& config)
-	:m_config(config)
-	,m_bConnected(false) {
+	:m_config(config), m_mysql(NULL), m_bConnected(false) {
 }
 
 MySqlConn::MySqlConn(const std::string& host,
@@ -122,8 +121,6 @@ void MySqlConn::connect() {
 
 	if (mysql_real_connect(m_mysql, m_config.host.c_str(), m_config.user.c_str(), m_config.passwd.c_str(), m_config.dbname.c_str(),
 						   m_config.port, NULL, 0) == NULL) {
-		mysql_close(m_mysql);
-		m_mysql = NULL;
 		throw std::runtime_error("mysql_real_connect: " + string(mysql_error(m_mysql)));
 	}
 
@@ -184,6 +181,63 @@ size_t MySqlConn::getAffectedRows() {
 	return 0;
 }
 
+MySqlResult::ptr MySqlConn::select(const std::string& tableName, const string& columns, const SqlJoin& cond) {
+	m_oss.clear();
+	m_oss.str("");
+	m_oss << "select " << columns << " from " << tableName;
+	if (!cond.m_pairs.empty()) {
+		m_oss << " where ";
+		for (uint32_t i =0; i < cond.m_pairs.size(); ++i) {
+			const SqlPair& p = cond.m_pairs[i];
+			if (i == 0) {
+				m_oss << p.m_key << "=";
+			} else {
+				m_oss << " and " << p.m_key << "=";
+			}
+			if (p.m_type == SqlPair::DB_INT) {
+				m_oss << p.m_value;
+			} else {
+				m_oss << "'" << escape(p.m_value) << "'";
+			}
+		}
+	}
+	//cout << m_oss.str() << endl;
+	return query(m_oss.str());
+}
+
+MySqlResult::ptr MySqlConn::select(const std::string& tableName, const SqlJoin& columns, const SqlJoin& cond) {
+	m_oss.clear();
+	m_oss.str("");
+	m_oss << "select ";
+	for (uint32_t i = 0; i < columns.m_pairs.size(); ++i) {
+		const SqlPair& p = columns.m_pairs[i];
+		if (i == 0) {
+			m_oss << p.m_key;
+		} else {
+			m_oss << "," << p.m_key;
+		}
+	}
+	m_oss << " from " << tableName;
+	if (!cond.m_pairs.empty()) {
+		m_oss << " where ";
+		for (uint32_t i =0; i < cond.m_pairs.size(); ++i) {
+			const SqlPair& p = cond.m_pairs[i];
+			if (i == 0) {
+				m_oss << p.m_key << "=";
+			} else {
+				m_oss << " and " << p.m_key << "=";
+			}
+			if (p.m_type == SqlPair::DB_INT) {
+				m_oss << p.m_value;
+			} else {
+				m_oss << "'" << escape(p.m_value) << "'";
+			}
+		}
+	}
+	//cout << m_oss.str() << endl;
+	return query(m_oss.str());
+}
+
 size_t MySqlConn::update(const string& tableName, const SqlJoin& columns, const string& condition) {
 	m_oss.clear();
 	m_oss.str("");
@@ -193,7 +247,7 @@ size_t MySqlConn::update(const string& tableName, const SqlJoin& columns, const 
 		if (i == 0) {
 			m_oss << p.m_key << "=";
 		} else {
-			m_oss << "," << p.m_key;
+			m_oss << "," << p.m_key << "=";
 		}
 		if (p.m_type == SqlPair::DB_INT) {
 			m_oss << p.m_value;
@@ -206,6 +260,44 @@ size_t MySqlConn::update(const string& tableName, const SqlJoin& columns, const 
 	//cout << m_oss.str() << endl;
 	execute(m_oss.str());
 	return getAffectedRows();
+}
+
+size_t MySqlConn::update(const string& tableName, const SqlJoin& columns, const SqlJoin& cond) {
+	m_oss.clear();
+	m_oss.str("");
+	m_oss << "update " << tableName << " set ";
+	for (uint32_t i = 0; i < columns.m_pairs.size(); ++i) {
+		const SqlPair& p = columns.m_pairs[i];
+		if (i == 0) {
+			m_oss << p.m_key << "=";
+		} else {
+			m_oss << "," << p.m_key << "=";
+		}
+		if (p.m_type == SqlPair::DB_INT) {
+			m_oss << p.m_value;
+		} else {
+			m_oss << "'" << escape(p.m_value) << "'";
+		}
+	}
+	m_oss << " where ";
+	for (uint32_t i =0; i < cond.m_pairs.size(); ++i) {
+		const SqlPair& p = cond.m_pairs[i];
+		if (i == 0) {
+			m_oss << p.m_key << "=";
+		} else {
+			m_oss << " and " << p.m_key << "=";
+		}
+		if (p.m_type == SqlPair::DB_INT) {
+			m_oss << p.m_value;
+		} else {
+			m_oss << "'" << escape(p.m_value) << "'";
+		}
+	}
+
+	//cout << m_oss.str() << endl;
+	execute(m_oss.str());
+	return getAffectedRows();
+
 }
 
 size_t MySqlConn::insert(const string& tableName, const SqlJoin& columns) {
@@ -287,6 +379,30 @@ size_t MySqlConn::deleteFrom(const string& tableName, const string& condition) {
 	//cout << m_oss.str() << endl;
 	execute(m_oss.str());
 	return getAffectedRows();
+}
+
+size_t MySqlConn::deleteFrom(const string& tableName, const SqlJoin& cond) {
+	m_oss.clear();
+	m_oss.str("");
+	m_oss << "delete from " << tableName << " where ";
+
+	for (uint32_t i =0; i < cond.m_pairs.size(); ++i) {
+		const SqlPair& p = cond.m_pairs[i];
+		if (i == 0) {
+			m_oss << p.m_key << "=";
+		} else {
+			m_oss << " and " << p.m_key << "=";
+		}
+		if (p.m_type == SqlPair::DB_INT) {
+			m_oss << p.m_value;
+		} else {
+			m_oss << "'" << escape(p.m_value) << "'";
+		}
+	}
+	//cout << m_oss.str() << endl;
+	execute(m_oss.str());
+	return getAffectedRows();
+
 }
 
 //测试用

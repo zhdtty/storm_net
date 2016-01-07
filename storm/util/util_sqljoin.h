@@ -25,6 +25,11 @@ public:
 		m_type = DB_INT;
 	}
 
+	SqlPair(const string& key) {
+		m_key = "`" + key + "`";
+		m_type = DB_INT;
+	}
+
 	SqlPair(const string& key, const string& value) {
 		m_key = "`" + key + "`";
 		m_value = value;

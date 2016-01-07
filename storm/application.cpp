@@ -51,14 +51,15 @@ int Application::run(int argc, char** argv) {
 
 		displayServer();
 
+		m_connector->start(m_clientConfig);
+
 		if (!initialize()) {
 			return -1;
 		}
 
-		LOG("size of Server %ld\n", sizeof(*m_sockServer));
+		//LOG("size of Server %ld\n", sizeof(*m_sockServer));
 		//m_sockServer->show();
 		m_sockServer->start();
-		m_connector->start(m_clientConfig);
 
 		while (!m_sockServer->isTerminate() && !m_connector->isTerminate()) {
 			if (g_exit) {

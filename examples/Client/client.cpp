@@ -38,7 +38,7 @@ void Client::loop() {
 
 	//同步调用
 	EchoResponse response;
-//	int ret = g_prx->Echo(request, response);
+	int ret = g_prx->Echo(request, response);
 	//cout << response.msg() << endl;
 //	LOG("ret %d\n", ret);
 //	LOG("msg len %lu\n", response.msg().size());
@@ -49,7 +49,7 @@ void Client::loop() {
 
 	//单向调用
 	g_prx->async_Echo(NULL, request);
-	usleep(10);
+	//usleep(10);
 }
 
 int main(int argc, char** argv) {

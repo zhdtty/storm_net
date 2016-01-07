@@ -76,10 +76,15 @@ public:
 	uint64_t getInsertId();
 	size_t getAffectedRows();
 
+	MySqlResult::ptr select(const std::string& tableName, const string& columns, const SqlJoin& cond = SqlJoin());
+	MySqlResult::ptr select(const std::string& tableName, const SqlJoin& columns, const SqlJoin& cond = SqlJoin());
 	size_t update(const string& tableName, const SqlJoin& columns, const string& condition);
+	size_t update(const string& tableName, const SqlJoin& columns, const SqlJoin& cond);
 	size_t insert(const string& tableName, const SqlJoin& columns);
 	size_t replace(const string& tableName, const SqlJoin& columns);
 	size_t deleteFrom(const string& tableName, const string& condition);
+	size_t deleteFrom(const string& tableName, const SqlJoin& cond);
+
 
 
 private:

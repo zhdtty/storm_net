@@ -88,16 +88,19 @@ inline int decodeResponse(ReqMessage* message, T& response) {
 	do {
 		if (message->status != 0) {
 			ret = message->status;
+			LOG("resp status %d\n", ret);
 			break;
 		}
 		RpcResponse* resp = message->resp;
 		if (resp->ret() != 0) {
 			ret = resp->ret();
+			LOG("resp status %d\n", ret);
 			break;
 		}
 		//LOG("len %lu\n", resp->response().size());
 		if (!response.ParseFromString(resp->response())) {
 			ret = RespStatus_CoderError;
+			LOG("resp status %d\n", ret);
 			break;
 		}
 
