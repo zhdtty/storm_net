@@ -227,7 +227,7 @@ void Parser::printServiceHead(Service& s) {
 
 	for (uint32_t i = 0; i < s.m_functions.size(); ++i) {
 		Function& f = s.m_functions[i];
-		m_oss << "\t" << "virtual void callback_" << f.m_name << "(int ret, const "
+		m_oss << "\t" << "virtual void callback_" << f.m_name << "(int _ret, const "
 			<< f.m_outputClassName << "& " << f.m_outputParamName << ") {" << endl;
 		tab(2) << "throw std::runtime_error(\"no implement callback_" << f.m_name << "\");" << endl;
 		tab(1) << "};" << endl;
