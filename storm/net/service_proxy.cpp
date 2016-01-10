@@ -173,7 +173,7 @@ void ServiceProxy::doRequest(RecvPacket::ptr pack) {
 }
 
 void ServiceProxy::doClose(RecvPacket::ptr pack) {
-	LOG("onClose! %d\n", pack->id);
+	LOG("onClose! id %d, closeType %d\n", pack->id, pack->closeType);
 
 	if (pack->closeType == CloseType_ConnectFail) {
 		delEndPoint(pack->id);
