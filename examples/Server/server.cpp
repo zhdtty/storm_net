@@ -1,9 +1,6 @@
 #include "server.h"
 
 #include <stdio.h>
-
-#include "log.h"
-
 #include "GameServiceImp.h"
 
 Server g_server;

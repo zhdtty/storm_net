@@ -6,8 +6,7 @@
 #include "util/util_option.h"
 #include "util/util_config.h"
 #include "util/util_file.h"
-
-#include "log.h"
+#include "util/util_log.h"
 
 #include "common_header.h"
 
@@ -24,13 +23,21 @@ bool g_exit = false;
 
 static string g_pidFile;
 static string g_configFile;
+static COption g_option;
 
 SocketServer* Application::m_sockServer = NULL;
 SocketConnector* Application::m_connector = NULL;
 
-static void sighandler(int /*sig*/)
-{
+static void sighandler(int /*sig*/) {
 	g_exit = true;
+}
+
+void greenOutput(const string& content) {
+	cout << "\033[1;32m" << content <<  "\033[0m" << endl;
+}
+
+void redOutput(const string& content) {
+	cout << "\033[1;31m" << content <<  "\033[0m" << endl;
 }
 
 void Application::terminate() {
@@ -44,7 +51,16 @@ int Application::run(int argc, char** argv) {
 		m_connector = new SocketConnector();
 
 		parseConfig(argc, argv);
+
+		LogManager::initLog("", m_config.appName + "." + m_config.serverName);
+
+		killOldProcess();
+		if (g_option.isStop()) {
+			exit(0);
+		}
 		savePidFile();
+		cout << "starting server..." << endl;
+
 		signal(SIGINT, sighandler);
 		signal(SIGTERM, sighandler);
 		signal(SIGPIPE, SIG_IGN);
@@ -54,12 +70,26 @@ int Application::run(int argc, char** argv) {
 		m_connector->start(m_clientConfig);
 
 		if (!initialize()) {
+			redOutput("start server failed");
 			return -1;
 		}
 
 		//LOG("size of Server %ld\n", sizeof(*m_sockServer));
 		//m_sockServer->show();
 		m_sockServer->start();
+		greenOutput("start server success");
+		if (g_option.isDaemon()) {
+			int fd = open("/dev/null", O_RDWR );
+			if (fd != -1) {
+				dup2(fd, 0);
+				dup2(fd, 1);
+				dup2(fd, 2);
+			} else {
+				close(0);
+				close(1);
+				close(2);
+			}
+		}
 
 		while (!m_sockServer->isTerminate() && !m_connector->isTerminate()) {
 			if (g_exit) {
@@ -71,10 +101,10 @@ int Application::run(int argc, char** argv) {
 
 		destroy();
 		removePidFile();
-		LOG("normal exit\n");
+		STORM_INFO << "server normal exit";
 
 	} catch (std::exception& e) {
-		cerr << "server error: " << e.what() << endl;
+		STORM_ERROR << "server error " << e.what();
 		return -1;
 	}
 
@@ -82,10 +112,10 @@ int Application::run(int argc, char** argv) {
 }
 
 void Application::parseConfig(int argc, char** argv) {
-	COption option;
-	option.parse(argc, argv);
+	g_option.parse(argc, argv);
 
-	string configFile = option.getConfigFile();
+	string configFile = g_option.getConfigFile();
+	g_configFile = _briefLogFileName(argv[0]);
 	if (configFile.empty()) {
 		configFile = g_configFile;
 	}
@@ -98,11 +128,6 @@ void Application::parseConfig(int argc, char** argv) {
 
 	const CConfig& clientCfg = config.getSubConfig("client");
 	parseClientConfig(clientCfg);
-
-	killOldProcess();
-	if (option.isStop()) {
-		exit(0);
-	}
 }
 
 void Application::parseClientConfig(const CConfig& cfg) {
@@ -138,26 +163,26 @@ void Application::parseServerConfig(const CConfig& cfg) {
 }
 
 void Application::displayServer() {
-	cout << "AppName " << m_config.appName << endl;
-	cout << "ServerName " << m_config.serverName << endl;
+	STORM_INFO << "AppName " << m_config.appName;
+	STORM_INFO << "ServerName " << m_config.serverName;
 
 	map<string, ServiceConfig>& allService = m_config.services;
 	for (map<string, ServiceConfig>::const_iterator it = allService.begin(); it != allService.end(); ++it) {
 		const ServiceConfig& cfg = it->second;
-		cout << endl;
-		cout << "Service: " << cfg.serviceName << endl;
-		cout << "\t Host: " << cfg.host << endl;
-		cout << "\t Port: " << cfg.port << endl;
-		cout << "\t ThreadNum: " << cfg.threadNum << endl;
-		cout << "\t MaxConnections: " << cfg.maxConnections << endl;
-		cout << "\t MaxQueueLen: " << cfg.maxQueueLen << endl;
-		cout << "\t QueueTimeOut: " << cfg.queueTimeout << endl;
+		STORM_INFO;
+		STORM_INFO << "Service: " << cfg.serviceName;
+		STORM_INFO << "\t Host: " << cfg.host;
+		STORM_INFO << "\t Port: " << cfg.port;
+		STORM_INFO << "\t ThreadNum: " << cfg.threadNum;
+		STORM_INFO << "\t MaxConnections: " << cfg.maxConnections;
+		STORM_INFO << "\t MaxQueueLen: " << cfg.maxQueueLen;
+		STORM_INFO << "\t QueueTimeOut: " << cfg.queueTimeout;
 	}
 }
 
 void Application::savePidFile() {
 	int pid = getpid();
-	LOG("pid %d\n", pid);
+	LOG_DEBUG << "pid " << pid;
 	UtilFile::saveToFile(g_pidFile, UtilString::tostr(pid) + "\n");
 }
 
@@ -168,27 +193,32 @@ void Application::removePidFile() {
 void Application::killOldProcess() {
 	string pidStr = UtilFile::loadFromFile(g_pidFile);
 	if (pidStr.empty()) {
-		cout << "no server running" << endl;
 		return;
 	}
 	int pid = UtilString::strto<int>(pidStr);
-	cout << "stoping server, pid " << pid << endl;
+	cout << "stoping old server, pid " << pid << endl;
 
 	int ret = kill(pid, 15);
-	if (ret == ESRCH) {
-		cout << "permission not enough" << endl;
+	if (ret == 0) {
+		cout << "old server exited " << endl;
 		return;
-	} else if (ret == EPERM) {
-		cout << "server not running" << endl;
+	}
+
+	if (errno == ESRCH) {
+		redOutput("permission not enough");
+		return;
+	} else if (errno == EPERM) {
+		redOutput("server not running");
 		removePidFile();
 		return;
-	} else if (ret == 0) {
+	} else if (errno == 0) {
+		cout << "old server exiting ..." << endl;
 		while (UtilFile::isFileExists(g_pidFile)) {
 			usleep(100 * 1000);
 		}
 	}
 
-	cout << "server exit " << endl;
+	cout << "old server exited" << endl;
 }
 
 void setDefaultConfigFile(const string& file) {

@@ -24,12 +24,12 @@ namespace Storm {
 SocketServer::SocketServer()
 	:m_exit(false), m_allocId(-1) {
     if (m_poll.invalid()) {
-        LOG("create poll failed\n");
+		STORM_ERROR << "create poll failed";
         ::exit(1);
     }
 	int fd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
 	if (fd < 0) {
-		LOG("efd < 0\n");
+		STORM_ERROR << "efd < 0";
 		::exit(1);
 	}
 	m_socket = getNewSocket();
@@ -44,12 +44,13 @@ SocketServer::SocketServer()
 }
 
 void SocketServer::show() {
-    LOG("efd = %d, socket id = %d, socket fd = %d\n", m_poll.getFd(), m_socket->id, m_socket->fd);
+	STORM_DEBUG << "efd " << m_poll.getFd()
+				<< ", socket id: " << m_socket->id
+				<< ", socket fd: " << m_socket->fd;
 }
 
 SocketServer::~SocketServer() {
 	exit();
-	LOG("socket server ~SocketServer\n");
 }
 
 void SocketServer::exit() {
@@ -151,7 +152,7 @@ void SocketServer::handleAccept(Socket* s) {
 
 		Socket* ns = getNewSocket();
 		if (ns == NULL) {
-			LOG("over max socket num");
+			STORM_ERROR << "over max socket num";
 			::close(connFd);
 			break;
 		}
@@ -203,7 +204,7 @@ void SocketServer::handleRead(Socket* s) {
     		} else if(errno == EINTR) {
     			continue;
     		} else {
-				LOG("connection error fd: %d error:%s\n", s->fd, strerror(errno));
+				STORM_INFO << "connection error fd: " << s->fd << " error: " << strerror(errno);
 				needClose = true;
     			break;
     		}
@@ -248,7 +249,7 @@ void SocketServer::handleWrite(Socket* s) {
 			} else if (errno == EINTR) {
 				continue;
 			} else {
-				LOG("send error fd: %d error:%s\n", s->fd, strerror(errno));
+				STORM_INFO << "send error fd: " << s->fd << ", error: " << strerror(errno);
 				needClose = true;
 				break;
 			}
@@ -289,7 +290,7 @@ void SocketServer::poll() {
 					break;
 				}
 				default:
-					LOG("invalid sock type %d\n", s->type);
+					STORM_ERROR << "invalid sock type " << s->type;
 					break;
 			}
 		}
@@ -357,7 +358,7 @@ void SocketServer::sendSocket(int id, IOBuffer::ptr buffer) {
 				} else if (errno == EINTR) {
 					continue;
 				} else {
-					LOG("send error fd: %d error:%s\n", s->fd, strerror(errno));
+					STORM_INFO << "send error fd: " << s->fd << ", error: " << strerror(errno);
 					needClose = true;
 					break;
 				}

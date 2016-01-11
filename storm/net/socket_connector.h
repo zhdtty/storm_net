@@ -48,7 +48,7 @@ public:
 		}
 		T* prx = new T(this);
 		if (prx->parseFromString(serviceName) == false) {
-			LOG("error! string: %s\n", serviceName.c_str());
+			STORM_ERROR << "error! string: " << serviceName;
 			return NULL;
 		}
 		m_proxys.insert(std::make_pair(serviceName, prx));

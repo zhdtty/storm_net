@@ -24,13 +24,13 @@ namespace Storm {
 SocketConnector::SocketConnector()
 	:m_exit(false), m_allocId(-1) {
     if (m_poll.invalid()) {
-        LOG("create poll failed\n");
+		STORM_ERROR << "create poll failed";
         ::exit(1);
     }
 
 	int fd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
 	if (fd < 0) {
-		LOG("efd < 0\n");
+		STORM_ERROR << "efd < 0";
 		::exit(1);
 	}
 
@@ -195,7 +195,7 @@ void SocketConnector::connectSocket(Socket* s) {
 		socketKeepAlive(fd);
 		socketNonBlock(fd);
 
-		//LOG("ip %s, port %d\n", s->ip.c_str(), s->port);
+		//STORM_DEBUG << "ip " << s->ip << " port " << s->port;
 		struct sockaddr_in stAddr;
 		memset(&stAddr, 0, sizeof(stAddr));
 		stAddr.sin_family = AF_INET;
@@ -205,7 +205,7 @@ void SocketConnector::connectSocket(Socket* s) {
 		int status = ::connect(fd, (struct sockaddr*)&stAddr, sizeof(stAddr));
 		if (status != 0 && errno != EINPROGRESS) {
 			::close(fd);
-			LOG("connect error: %s.\n", strerror(errno));
+			STORM_ERROR << "connect error: " << strerror(errno);
 			break;
 		}
 
@@ -227,7 +227,7 @@ void SocketConnector::connectSocket(Socket* s) {
 	} while (0);
 
 	if (!success) {
-		LOG("socket-server: connect socket error\n");
+		STORM_ERROR << "socket-server: connect socket error";
 		s->status = Socket_Status_Reserve;
 		s->proxy->onClose(s->id, CloseType_ConnectFail);
 		m_connTimeout.del(s->id);
@@ -248,7 +248,7 @@ void SocketConnector::handleConnect(Socket* s)
     socklen_t iLen = sizeof(iError);
     int iCode = getsockopt(s->fd, SOL_SOCKET, SO_ERROR, &iError, &iLen);
     if (iCode < 0 || iError) {
-		LOG("connect error: %s.\n", strerror(iError));
+		STORM_ERROR << "connect error: " << strerror(iError);
         forceClose(s, CloseType_ConnectFail);
 		return;
     }
@@ -288,7 +288,7 @@ void SocketConnector::handleRead(Socket* s) {
     		} else if(errno == EINTR) {
     			continue;
     		} else {
-				LOG("connection error fd: %d error:%s\n", s->fd, strerror(errno));
+				STORM_ERROR << "connection error fd: " << s->fd << " error: " << strerror(errno);
 				needClose = true;
     			break;
     		}
@@ -373,7 +373,7 @@ void SocketConnector::poll() {
 					break;
 				}
 				default:
-					LOG("invalid sock type %d\n", s->type);
+					STORM_ERROR << "invalid sock type " << s->type;
 					break;
 			}
 		}
@@ -444,7 +444,7 @@ void SocketConnector::terminate() {
 uint32_t SocketConnector::getNewClientSocket(SocketProxy* proxy, const string& host, uint32_t port) {
 	Socket* s = getNewSocket();
 	if (s == NULL) {
-		LOG("error when getSocket %s %d\n", host.c_str(), port);
+		STORM_ERROR << "error when getSocket " << host  << " " << port;
 		return 0;
 	}
 

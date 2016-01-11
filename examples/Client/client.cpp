@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include "util/util_time.h"
 
-#include "log.h"
-
 #include "GameService.h"
 
 Client g_server;

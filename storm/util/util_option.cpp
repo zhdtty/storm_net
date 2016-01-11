@@ -14,10 +14,12 @@ namespace Storm
 struct option opts[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"stop", no_argument, NULL, 's'},
-	{"config", required_argument, NULL, 'f'}
+	{"daemon", no_argument, NULL, 'd'},
+	{"config", required_argument, NULL, 'f'},
+	{NULL, 0, NULL, 0}
 };
 
-const char* option_str = "hsf:";
+const char* option_str = "hsdf:";
 
 void COption::parse(int argc, char *argv[]) {
 	int opt = 0;
@@ -32,6 +34,9 @@ void COption::parse(int argc, char *argv[]) {
 				break;
 			case 'f':
 				m_configFile = optarg;
+				break;
+			case 'd':
+				m_daemon = true;
 				break;
 			case '?':
 				//cout << "unknown" << endl;
@@ -48,6 +53,7 @@ void COption::displayUsage(const string& name) {
 	cout << "	-f --config	config file, default app.conf" << endl;
 	cout << "	-h --help	help" << endl;
 	cout << "	-s --stop	stop" << endl;
+	cout << "	-d --daemon	daemon" << endl;
 }
 
 }

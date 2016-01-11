@@ -1,5 +1,5 @@
-#ifndef _MFW_UTIL_FILE_
-#define _MFW_UTIL_FILE_
+#ifndef _STORM_UTIL_FILE_
+#define _STORM_UTIL_FILE_
 
 #include <string>
 #include <vector>

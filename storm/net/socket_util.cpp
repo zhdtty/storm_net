@@ -14,6 +14,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "util/util_log.h"
+
 namespace Storm {
 void socketNonBlock(int iFd) {
 	int iFlag = fcntl(iFd, F_GETFL, 0);
@@ -69,8 +71,7 @@ int socketBind(const char* pHost, int iPort) {
 
     freeaddrinfo(ai_list);
 	if (!bSuccess) {
-		//TODO log
-		printf("socket-server error when binding: %s.\n", strerror(errno));
+		STORM_ERROR << "socket-server error when binding: " << strerror(errno);
 		return -1;
 	}
     return iFd;

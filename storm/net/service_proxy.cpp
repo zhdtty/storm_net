@@ -153,7 +153,7 @@ void ServiceProxy::onClose(uint32_t id, uint32_t closeType) {
 void ServiceProxy::doRequest(RecvPacket::ptr pack) {
 	RpcResponse* resp = new RpcResponse();
 	if (!resp->ParseFromString(pack->buffer)) {
-		LOG("parse response error\n");
+		STORM_ERROR << "parse response error";
 		delete resp;
 		return;
 	}
@@ -162,7 +162,7 @@ void ServiceProxy::doRequest(RecvPacket::ptr pack) {
 
 	ReqMessage* mess = getAndDelReqMessage(requestId);
 	if (mess == NULL) {
-		LOG("error, unknown requestId\n");
+		STORM_ERROR << "error, unknown requestId";
 		delete resp;
 		return;
 	}
@@ -173,7 +173,7 @@ void ServiceProxy::doRequest(RecvPacket::ptr pack) {
 }
 
 void ServiceProxy::doClose(RecvPacket::ptr pack) {
-	LOG("onClose! id %d, closeType %d\n", pack->id, pack->closeType);
+	STORM_INFO << "onClose! id " << pack->id << ", closeType " << pack->closeType;;
 
 	if (pack->closeType == CloseType_ConnectFail) {
 		delEndPoint(pack->id);
@@ -243,7 +243,7 @@ void ServiceProxy::doInvoke(ReqMessage* req) {
 
 	uint32_t sendId = selectEndPoint(requestId);
 	if (sendId == 0) {
-		LOG("no endpoint %s\n", m_objName.c_str());
+		STORM_ERROR << "no endpoint " << m_objName;
 		req->status = RespStatus_UnReachableHost;
 		finishInvoke(req);
 		return;
@@ -267,7 +267,7 @@ void ServiceProxy::finishInvoke(ReqMessage* req) {
 		ScopeMutex<Notifier> lock(req->handler->m_notifier);
 		req->back = true;
 		req->handler->m_notifier.signal();
-		LOG("finishInvoke\n");
+		STORM_DEBUG << "finishInvoke";
 		return;
 	} else if (req->invokeType == InvokeType_Async) {
 		//TODO 提供一个接受队列，塞到队列里，实现callback指定线程调用

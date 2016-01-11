@@ -246,13 +246,13 @@ void Parser::printServiceSource(Service& s) {
 		tab(3) << f.m_inputClassName << " request;" << endl;
 		tab(3) << f.m_outputClassName << " response;" << endl;
 		tab(3) << "if (!request.ParseFromString(req.request())) {" << endl;
-		tab(4) << "LOG(\"error\\n\");" << endl;
+		tab(4) << "STORM_ERROR << \"error\";" << endl;
 		tab(4) << "return RespStatus_CoderError;" << endl;
 		tab(3) << "}" << endl;
 		tab(3) << f.m_name << "(conn, request, response);" << endl;
 		tab(3) << "if (req.invoke_type() != InvokeType_OneWay) {" << endl;
 		tab(4) << "if (!response.SerializeToString(resp.mutable_response())) {" << endl;
-		tab(5) << "LOG(\"error\\n\");" << endl;
+		tab(5) << "STORM_ERROR << \"error\"; " << endl;
 		tab(5) << "return RespStatus_CoderError;" << endl;
 		tab(4) << "}" << endl;
 		tab(3) << "}" << endl;
@@ -322,7 +322,7 @@ void Parser::printServiceSource(Service& s) {
 	}
 	tab(2) << "default:" << endl;
 	tab(2) << "{" << endl;
-	tab(3) << "LOG(\"unkown protoId %d\\n\", protoId);" << endl;
+	tab(3) << "STORM_ERROR << \"unkown protoId \" << protoId;" << endl;
 	tab(2) << "}" << endl;
 	tab(1) << "}" << endl;
 	tab(1) << "delRequest(req);" << endl;

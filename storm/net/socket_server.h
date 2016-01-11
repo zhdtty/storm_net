@@ -17,6 +17,7 @@
 #include "socket_util.h"
 #include "util/object_pool.h"
 #include "util/util_thread.h"
+#include "util/util_log.h"
 #include "app_config.h"
 
 #include "socket_define.h"
@@ -93,12 +94,12 @@ bool SocketServer::addListener(const ServiceConfig& cfg) {
 
 	map<string, SocketHandler::ptr>::iterator it = m_handlers.find(listenerName);
 	if (it != m_handlers.end()) {
-		LOG("duplicate listener listenerName: %s\n", listenerName.c_str());
+		STORM_ERROR << "duplicate listener listenerName: " << listenerName;
 		return false;
 	}
 	SocketHandler::ptr handler(new SocketHandler);
 	if (!handler->setListener<T>(this, cfg)) {
-		LOG("setListener error\n");
+		STORM_ERROR << "setListener error";
 		return false;
 	}
 	m_handlers.insert(make_pair(listenerName, handler));
@@ -106,12 +107,12 @@ bool SocketServer::addListener(const ServiceConfig& cfg) {
 	//监听
 	int fd = socketListen(cfg.host.c_str(), cfg.port, 1024);
 	if (fd < 0) {
-		LOG("error when bind %s\n", listenerName.c_str());
+		STORM_ERROR << "error when bind " << listenerName;
 		return false;
 	}
 	Socket* s = getNewSocket();
 	if (s == NULL) {
-		LOG("error when getSocket %s\n", listenerName.c_str());
+		STORM_ERROR << "error when getSocket " << listenerName;
 		return false;
 	}
 
@@ -121,7 +122,7 @@ bool SocketServer::addListener(const ServiceConfig& cfg) {
 	s->handler = handler.get();
 	m_poll.addToRead(fd, s);
 
-	LOG("start %s, host: %s, port: %d\n", listenerName.c_str(), cfg.host.c_str(), cfg.port);
+	STORM_INFO << "start: " << listenerName << ", bind ip: " << cfg.host << ", port: " << cfg.port;
 	return true;
 }
 

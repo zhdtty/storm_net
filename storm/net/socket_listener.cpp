@@ -5,6 +5,7 @@
 #include "socket_server.h"
 #include "protocol.h"
 #include "util/util_time.h"
+#include "util/util_log.h"
 #include "net/request.h"
 
 #include <iostream>
@@ -26,7 +27,7 @@ void SocketListener::doRequest(Connection::ptr pack) {
 
 	//解析RpcRequest
 	if (!req.ParseFromString(pack->buffer)) {
-		LOG("rpc request error\n");
+		STORM_ERROR << "rpc request error";
 		m_sockServer->close(pack->id, CloseType_Packet_Error);
 		return;
 	}
@@ -61,7 +62,7 @@ void SocketListener::start() {
 }
 
 void SocketListener::showLen() {
-	LOG("queue %u\n", m_handler->m_packets.size());
+	STORM_DEBUG << "queue " << m_handler->m_packets.size();
 }
 
 void SocketListener::terminate() {
@@ -118,10 +119,10 @@ void SocketHandler::doEmptyClose(uint32_t id) {
 }
 
 void SocketHandler::onAccept(int id, int fd, const string& ip, int port) {
-	LOG("%s accept %d %d %s:%d\n", m_config.serviceName.c_str(), id, fd, ip.c_str(), port);
+	STORM_INFO << m_config.serviceName << " accept " << id << " " << fd << " " << ip << " " << port;
 	uint32_t now = UtilTime::getNow();
 	if (m_conList.size() >= m_config.maxConnections) {
-		LOG("max Connection\n");
+		STORM_ERROR << "max Connection";
 		m_sockServer->close(id, CloseType_Server);
 	} else {
 		m_conList.add(id, now);
@@ -129,7 +130,8 @@ void SocketHandler::onAccept(int id, int fd, const string& ip, int port) {
 }
 
 void SocketHandler::onClose(int id, int fd, const string& ip, int port, int closeType) {
-	LOG("%s close %d %d %s:%d, close type %d\n", m_config.serviceName.c_str(), id, fd, ip.c_str(), port, closeType);
+	STORM_INFO << m_config.serviceName << " close " << id << " " << fd << " " << ip << " " << port
+			   << ", close type " << closeType;
 	m_conList.del(id);
 	m_timelist.del(id);
 	Connection::ptr pack(new Connection);
@@ -153,7 +155,7 @@ void SocketHandler::onData(int id, int fd, const string& ip, int port, IOBuffer:
 		if (code == Packet_Less) {
 			break;
 		} else if (code == Packet_Error) {
-			LOG("packet error %d %d %d\n", id,  fd, buffer->getSize());
+			STORM_ERROR << "packet error " << id << " " << fd << " " << buffer->getSize();
 			m_sockServer->close(id);
 			break;
 		}
@@ -166,7 +168,7 @@ void SocketHandler::onData(int id, int fd, const string& ip, int port, IOBuffer:
 		swap(pack->buffer, out);
 
 		if (m_packets.size() > m_config.maxQueueLen) {
-			LOG("queue size over max\n");
+			STORM_ERROR << "queue size over max";
 			return;
 		}
 		m_packets.push_back(pack);
