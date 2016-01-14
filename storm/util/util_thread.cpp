@@ -1,9 +1,13 @@
 #include "util_thread.h"
 
+#include <unistd.h>
 #include <sys/time.h>
+#include <sys/syscall.h>
 #include <time.h>
+#include <thread>
 
 #include "util_time.h"
+#include "common_header.h"
 
 
 namespace Storm {
@@ -58,4 +62,28 @@ void Thread::join() {
 	}
 	pthread_join(m_thread, NULL);
 }
+
+__thread uint32_t t_tid = 0;
+__thread char t_tidString[32];
+
+static pid_t gettid() {      
+	return syscall(SYS_gettid); 
+} 
+
+uint32_t getTid() {
+	if (UNLIKELY(t_tid == 0)) {
+		t_tid = gettid();
+		snprintf(t_tidString, sizeof t_tidString, "%5d", t_tid);
+	}
+	return t_tid;
+}
+
+const char* getThreadIdStr() {
+	if (UNLIKELY(t_tid == 0)) {
+		t_tid = gettid();
+		snprintf(t_tidString, sizeof t_tidString, "%5d", t_tid);
+	}
+	return t_tidString;
+}
+
 }

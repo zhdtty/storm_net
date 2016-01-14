@@ -10,16 +10,20 @@ using namespace std;
 namespace Storm
 {
 
-uint32_t UtilTime::getNow()
-{
+uint32_t UtilTime::getNow() {
 	return time(0);
 }
 
-uint64_t UtilTime::getNowMS()
-{
+uint64_t UtilTime::getNowMS() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
+}
+
+uint64_t UtilTime::getNowUs() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (uint64_t)tv.tv_sec * MICROSEC_PER_SEC + (uint64_t)tv.tv_usec;
 }
 
 string UtilTime::formatTime(uint32_t iTime, const char *fmt)
@@ -58,12 +62,18 @@ uint32_t UtilTime::getDate(uint32_t iTime, int32_t offset)
 	return (tmnow.tm_year + 1900) * 10000 + (tmnow.tm_mon + 1) * 100 + tmnow.tm_mday;
 }
 
-uint32_t UtilTime::getHour(uint32_t iTime, int32_t offset)
-{
+uint32_t UtilTime::getHour(uint32_t iTime, int32_t offset) {
 	time_t now_time = iTime + (offset * 3600);
 	struct tm tmnow;
 	localtime_r(&now_time, &tmnow);
 	return tmnow.tm_hour;
+}
+
+uint32_t UtilTime::getDateHour(uint32_t iTime, int32_t offset) {
+	time_t now_time = iTime + (offset * 3600);
+	struct tm tmnow;
+	localtime_r(&now_time, &tmnow);
+	return ((tmnow.tm_year + 1900) * 10000 + (tmnow.tm_mon + 1) * 100 + tmnow.tm_mday) * 100 + tmnow.tm_hour;
 }
 
 uint32_t UtilTime::fromDate(uint32_t iDate, uint32_t iHour)

@@ -155,5 +155,8 @@ private:
 	std::list<T>	m_list;
 	Notifier		m_notifier;
 };
+
+uint32_t getTid();
+const char* getThreadIdStr();
 }
 #endif

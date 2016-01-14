@@ -10,6 +10,7 @@ const uint32_t MINUTE_PER_HOUR		= 60;
 const uint32_t SECOND_PER_HOUR		= 3600;
 const uint32_t HOUR_PER_DAY			= 24;
 const uint32_t SECOND_PER_DAY		= 86400;
+const uint32_t MICROSEC_PER_SEC 	= 1000000;
 
 namespace Storm
 {
@@ -19,6 +20,7 @@ class UtilTime
 public:
 	static uint32_t getNow();
 	static uint64_t getNowMS();
+	static uint64_t getNowUs();
 
 	static string formatTime(uint32_t iTime, const char *fmt = "%Y-%m-%d %H:%M:%S");
 	static uint32_t parseTime(const string &sTime, const char *fmt = "%Y-%m-%d %H:%M:%S");
@@ -26,6 +28,7 @@ public:
 
 	static uint32_t getDate(uint32_t iTime, int32_t offset = 0);
 	static uint32_t getHour(uint32_t iTime, int32_t offset = 0);
+	static uint32_t getDateHour(uint32_t iTime, int32_t offset = 0);
 	//@param iDate format: 20140820
 	static uint32_t fromDate(uint32_t iDate, uint32_t iHour = 0);
 

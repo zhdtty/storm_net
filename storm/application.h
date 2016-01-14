@@ -6,6 +6,7 @@
 #include "net/socket_server.h"
 #include "net/socket_connector.h"
 #include "util/util_config.h"
+#include "util/util_log.h"
 #include "app_config.h"
 
 namespace Storm {
@@ -14,6 +15,10 @@ public:
 	int run(int argc, char** argv);
 
 	static void terminate();
+
+	//默认initialize之前日志同步，initialize之后日志异步
+	//开发阶段可以让日志同步输出，用于调试crash类bug
+	static void setLogSync(bool sync);
 
 protected:
 	virtual bool initialize() {return true;};

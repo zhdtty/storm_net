@@ -24,6 +24,7 @@ bool g_exit = false;
 static string g_pidFile;
 static string g_configFile;
 static COption g_option;
+static bool g_syncLog = false;
 
 SocketServer* Application::m_sockServer = NULL;
 SocketConnector* Application::m_connector = NULL;
@@ -52,14 +53,16 @@ int Application::run(int argc, char** argv) {
 
 		parseConfig(argc, argv);
 
+		killOldProcess();
+
 		LogManager::initLog("", m_config.appName + "." + m_config.serverName);
 
-		killOldProcess();
 		if (g_option.isStop()) {
 			exit(0);
 		}
 		savePidFile();
-		cout << "starting server..." << endl;
+		cout << "starting server, pid: " << getpid() << endl;
+		LOG_DEBUG << "starting server, pid: " << getpid();
 
 		signal(SIGINT, sighandler);
 		signal(SIGTERM, sighandler);
@@ -73,6 +76,7 @@ int Application::run(int argc, char** argv) {
 			redOutput("start server failed");
 			return -1;
 		}
+		LogManager::setLogSync(g_syncLog);
 
 		//LOG("size of Server %ld\n", sizeof(*m_sockServer));
 		//m_sockServer->show();
@@ -100,9 +104,10 @@ int Application::run(int argc, char** argv) {
 		}
 
 		destroy();
-		removePidFile();
-		STORM_INFO << "server normal exit";
 
+		STORM_INFO << "server normal exit";
+		LogManager::finish();
+		removePidFile();
 	} catch (std::exception& e) {
 		STORM_ERROR << "server error " << e.what();
 		return -1;
@@ -115,7 +120,8 @@ void Application::parseConfig(int argc, char** argv) {
 	g_option.parse(argc, argv);
 
 	string configFile = g_option.getConfigFile();
-	g_configFile = _briefLogFileName(argv[0]);
+	g_configFile = briefLogFileName(argv[0]);
+	g_configFile.append(".conf");
 	if (configFile.empty()) {
 		configFile = g_configFile;
 	}
@@ -182,7 +188,6 @@ void Application::displayServer() {
 
 void Application::savePidFile() {
 	int pid = getpid();
-	LOG_DEBUG << "pid " << pid;
 	UtilFile::saveToFile(g_pidFile, UtilString::tostr(pid) + "\n");
 }
 
@@ -199,26 +204,25 @@ void Application::killOldProcess() {
 	cout << "stoping old server, pid " << pid << endl;
 
 	int ret = kill(pid, 15);
-	if (ret == 0) {
-		cout << "old server exited " << endl;
-		return;
-	}
-
-	if (errno == ESRCH) {
+	if (ret == 0 || errno == 0) {
+		cout << "old server exiting ..." << endl;
+		while (UtilFile::isFileExists(g_pidFile)) {
+			usleep(500 * 1000);
+		}
+	} else if (errno == ESRCH) {
 		redOutput("permission not enough");
 		return;
 	} else if (errno == EPERM) {
 		redOutput("server not running");
 		removePidFile();
 		return;
-	} else if (errno == 0) {
-		cout << "old server exiting ..." << endl;
-		while (UtilFile::isFileExists(g_pidFile)) {
-			usleep(100 * 1000);
-		}
 	}
 
 	cout << "old server exited" << endl;
+}
+
+void Application::setLogSync(bool sync) {
+	g_syncLog = sync;
 }
 
 void setDefaultConfigFile(const string& file) {

@@ -14,6 +14,9 @@
 #include "net/io_buffer.h"
 #include "util/util_log.h"
 
+#define LIKELY(x) __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+
 using namespace std;
 
 #endif
