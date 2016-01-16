@@ -17,13 +17,12 @@ struct ServiceConfig {
 struct ServerConfig {
 	std::string appName;
 	std::string serverName;
+
 	std::string basePath;
 	std::string dataPath;
 	std::string localIp;
 	std::string logPath;
-	int         logSize;
-	int         logNum;
-	std::string logLevel;
+
 	std::string local;
 	std::string node;
 	std::string log;
@@ -32,6 +31,10 @@ struct ServerConfig {
 	std::string configFile;
 	int         reportFlow;
 	int         isCheckSet;
+
+	uint32_t logNum;
+	uint64_t logSize;
+	uint32_t logLevel;
 
 	map<string, ServiceConfig> services;
 };

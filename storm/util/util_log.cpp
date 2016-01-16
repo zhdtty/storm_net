@@ -73,7 +73,7 @@ protected:
 
 
 static uint32_t g_maxFileNum = 10;
-static uint64_t g_maxFileSize = 10 * 1024 * 1024;
+static uint64_t g_maxFileSize = 100 * 1024 * 1024;
 
 class RollLog : public LogBase {
 public:
@@ -218,8 +218,8 @@ static Mutex g_logMutex;
 static list<LogData::ptr> g_logList;
 static map<string, LogBase*> g_logs;
 
-static LogLevel g_level = LogLevel_Debug;
-static LogLevel g_stormLevel = LogLevel_Debug;
+LogLevel g_level = LogLevel_Debug;
+LogLevel g_stormLevel = LogLevel_Debug;
 
 void LogManager::initLog(const string& path, const string fileNamePrefix) {
 	ScopeMutex<Mutex> lock(g_logMutex);
@@ -238,9 +238,11 @@ void LogManager::setLogSync(bool sync) {
 	g_syncLog = sync;
 }
 
-void LogManager::setLogLevel(LogLevel level, LogLevel stormLevel) {
-	ScopeMutex<Mutex> lock(g_logMutex);
+void LogManager::setLogLevel(LogLevel level) {
 	g_level = level;
+}
+
+void LogManager::setStormLogLevel(LogLevel level) {
 	g_stormLevel = level;
 }
 
@@ -251,6 +253,21 @@ void LogManager::setRollLogInfo(const string& logName, uint32_t maxFileNum, uint
 	if (r != NULL) {
 		r->setInfo(maxFileNum, maxFileSize);
 	}
+}
+
+LogLevel LogManager::parseLevel(const string& levelStr) {
+	LogLevel level = LogLevel_Debug;
+	string s = UtilString::toupper(levelStr);
+	if (s == "DEBUG") {
+		level = LogLevel_Debug;
+	} else if (s == "INFO") {
+		level = LogLevel_Info;
+	} else if (s == "ERROR") {
+		level = LogLevel_Error;
+	} else if (s == "NONE") {
+		level = LogLevel_None;
+	}
+	return level;	
 }
 
 void LogManager::finish() {
@@ -354,7 +371,6 @@ __thread uint32_t t_lastTime = 0;
 ostringstream& getOss() {
 	if (__builtin_expect(t_oss == NULL, 0)) {
 		t_oss = new ostringstream;
-		printf("new oss\n");
 	}
 	return *t_oss;
 }
@@ -362,7 +378,12 @@ ostringstream& getOss() {
 LogStream::LogStream(const string& logName, LogType logType)
 	:m_logName(logName), m_logType(logType) {
 
+#if USE_LOCAL_OSS
 	ostringstream& oss = getOss();
+#else
+	ostringstream& oss = m_oss;
+#endif
+
 	oss.clear();
 	oss.str("");
 	uint64_t nowUs = UtilTime::getNowUs();
@@ -380,7 +401,11 @@ LogStream::LogStream(const string& logName, LogType logType, LogLevel logLevel, 
 					 const string& fileName, int line, const string& func)
 	:m_logName(logName), m_logType(logType) {
 
+#if USE_LOCAL_OSS
 	ostringstream& oss = getOss();
+#else
+	ostringstream& oss = m_oss;
+#endif
 	oss.clear();
 	oss.str("");
 	uint64_t nowUs = UtilTime::getNowUs();
@@ -411,7 +436,11 @@ void LogStream::prepareTimeStr() {
 }
 
 LogStream::~LogStream() {
+#if USE_LOCAL_OSS
 	ostringstream& oss = getOss();
+#else
+	ostringstream& oss = m_oss;
+#endif
 	oss << endl;
 
 	LogData::ptr logData(new LogData());
@@ -424,7 +453,11 @@ LogStream::~LogStream() {
 }
 
 ostringstream& LogStream::stream() {
+#if USE_LOCAL_OSS
 	return getOss();
+#else
+	return m_oss;
+#endif
 }
 
 }

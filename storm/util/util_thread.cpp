@@ -81,7 +81,7 @@ uint32_t getTid() {
 const char* getThreadIdStr() {
 	if (UNLIKELY(t_tid == 0)) {
 		t_tid = gettid();
-		snprintf(t_tidString, sizeof t_tidString, "%5d", t_tid);
+		snprintf(t_tidString, sizeof t_tidString, "%d", t_tid);
 	}
 	return t_tidString;
 }

@@ -8,6 +8,8 @@
 #include "util_time.h"
 #include "noncopyable.h"
 
+#define USE_LOCAL_OSS 1
+
 namespace Storm {
 
 enum LogType {
@@ -17,10 +19,10 @@ enum LogType {
 };
 
 enum LogLevel {
-	LogLevel_Debug,
-	LogLevel_Info,
-	LogLevel_Error,
-	LogLevel_None,
+	LogLevel_Debug = 0,
+	LogLevel_Info = 1,
+	LogLevel_Error = 2,
+	LogLevel_None = 3,
 };
 
 struct LogData {
@@ -43,8 +45,11 @@ public:
 	static void finish();
 
 	static void setLogSync(bool sync);
-	static void setLogLevel(LogLevel level, LogLevel stormLevel);
+	static void setLogLevel(LogLevel level);
+	static void setStormLogLevel(LogLevel level);
 	static void setRollLogInfo(const string& logName, uint32_t maxFileNum, uint64_t maxFileSize);
+
+	static LogLevel parseLevel(const string& levelStr);
 };
 
 class LogStream : public noncopyable {
@@ -59,33 +64,44 @@ private:
 	string m_logName;
 	uint32_t m_logTime;
 	LogType m_logType;
+#if !USE_LOCAL_OSS
+	ostringstream m_oss;
+#endif
 };
 
 const char *briefLogFileName(const char *name);
 
-#define LOG_DEBUG if (1) \
-	LogStream("", Storm::LogType_Roll, Storm::LogLevel_Debug, false, __FILE__, __LINE__, __FUNCTION__).stream()
+extern LogLevel g_level;
+extern LogLevel g_stormLevel;
 
-#define LOG_INFO if (1) \
-	LogStream("", Storm::LogType_Roll, Storm::LogLevel_Info, false, __FILE__, __LINE__, __FUNCTION__).stream()
+#define LOG_DEBUG if (g_level <= Storm::LogLevel_Debug) \
+	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Debug, false, __FILE__, __LINE__, __FUNCTION__).stream()
 
-#define LOG_ERROR if (1) \
-	LogStream("", Storm::LogType_Roll, Storm::LogLevel_Error, false, __FILE__, __LINE__, __FUNCTION__).stream()
+#define LOG_INFO if (g_level <= Storm::LogLevel_Info) \
+	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Info, false, __FILE__, __LINE__, __FUNCTION__).stream()
 
-#define STORM_DEBUG if (1) \
-	LogStream("", Storm::LogType_Roll, Storm::LogLevel_Debug, true, __FILE__, __LINE__, __FUNCTION__).stream()
+#define LOG_ERROR if (g_level <= Storm::LogLevel_Error) \
+	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Error, false, __FILE__, __LINE__, __FUNCTION__).stream()
 
-#define STORM_INFO if (1) \
-	LogStream("", Storm::LogType_Roll, Storm::LogLevel_Info, true, __FILE__, __LINE__, __FUNCTION__).stream()
+#define STORM_DEBUG if (g_stormLevel <= Storm::LogLevel_Debug) \
+	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Debug, true, __FILE__, __LINE__, __FUNCTION__).stream()
 
-#define STORM_ERROR if (1) \
-	LogStream("", Storm::LogType_Roll, Storm::LogLevel_Error, true, __FILE__, __LINE__, __FUNCTION__).stream()
+#define STORM_INFO if (g_stormLevel <= Storm::LogLevel_Info) \
+	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Info, true, __FILE__, __LINE__, __FUNCTION__).stream()
+
+#define STORM_ERROR if (g_stormLevel <= Storm::LogLevel_Error) \
+	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Error, true, __FILE__, __LINE__, __FUNCTION__).stream()
 
 #define DAY_LOG(file) \
-	LogStream(file, Storm::LogType_Day).stream()
+	Storm::LogStream(file, Storm::LogType_Day).stream()
 
 #define HOUR_LOG(file) \
-	LogStream(file, Storm::LogType_Hour).stream()
+	Storm::LogStream(file, Storm::LogType_Hour).stream()
+
+#define DAY_ERROR
+
+#define DAY_EXCEPTION
+	
 
 }
 

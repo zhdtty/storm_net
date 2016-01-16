@@ -53,9 +53,16 @@ int Application::run(int argc, char** argv) {
 
 		parseConfig(argc, argv);
 
+		cout << endl;
 		killOldProcess();
 
-		LogManager::initLog("", m_config.appName + "." + m_config.serverName);
+		string logPath = m_config.logPath + "/" + m_config.appName + "/";
+		//TODO 分区路径
+		logPath += m_config.serverName + "/";
+
+		LogManager::initLog(logPath, m_config.appName + "." + m_config.serverName);
+		LogManager::setLogLevel((LogLevel)m_config.logLevel);
+		LogManager::setRollLogInfo("", m_config.logNum, m_config.logSize);
 
 		if (g_option.isStop()) {
 			exit(0);
@@ -146,6 +153,11 @@ void Application::parseServerConfig(const CConfig& cfg) {
 	m_config.appName = cfg.getCfg("app");
 	m_config.serverName = cfg.getCfg("server");
 	g_pidFile = m_config.serverName + ".pid";
+
+	m_config.logNum = cfg.getCfg<uint32_t>("log_num", 10);
+	m_config.logSize = UtilString::parseHumanReadableSize(cfg.getCfg("log_size", "50M"));
+	m_config.logLevel = LogManager::parseLevel(cfg.getCfg("log_level", "DEBUG"));
+	m_config.logPath = cfg.getCfg("log_path", "./log/");
 
 	map<string, ServiceConfig>& allService = m_config.services;
 	const map<string, CConfig>& servicesCfg = cfg.getAllSubConfig();
