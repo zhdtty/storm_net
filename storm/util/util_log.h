@@ -8,8 +8,6 @@
 #include "util_time.h"
 #include "noncopyable.h"
 
-#define USE_LOCAL_OSS 1
-
 namespace Storm {
 
 enum LogType {
@@ -22,7 +20,8 @@ enum LogLevel {
 	LogLevel_Debug = 0,
 	LogLevel_Info = 1,
 	LogLevel_Error = 2,
-	LogLevel_None = 3,
+	LogLevel_Exception = 3,
+	LogLevel_None
 };
 
 struct LogData {
@@ -59,14 +58,24 @@ public:
 	~LogStream();
 
 	ostringstream& stream();
-	void prepareTimeStr();
+
 private:
 	string m_logName;
 	uint32_t m_logTime;
 	LogType m_logType;
-#if !USE_LOCAL_OSS
-	ostringstream m_oss;
-#endif
+};
+
+//ERROR日志同时打RollLog和DayLog
+class RollDayStream : public noncopyable {
+public:
+	RollDayStream(const string& logName, LogLevel logLevel, const string& fileName, int line, const string& func);
+	~RollDayStream();
+
+	ostringstream& stream();
+
+private:
+	string m_logName;
+	uint32_t m_logTime;
 };
 
 const char *briefLogFileName(const char *name);
@@ -81,7 +90,10 @@ extern LogLevel g_stormLevel;
 	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Info, false, __FILE__, __LINE__, __FUNCTION__).stream()
 
 #define LOG_ERROR if (g_level <= Storm::LogLevel_Error) \
-	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Error, false, __FILE__, __LINE__, __FUNCTION__).stream()
+	Storm::RollDayStream("error", Storm::LogLevel_Error, __FILE__, __LINE__, __FUNCTION__).stream()
+
+#define LOG_EXCEPTION if (g_level <= Storm::LogLevel_Exception) \
+	Storm::RollDayStream("exception", Storm::LogLevel_Exception, __FILE__, __LINE__, __FUNCTION__).stream()
 
 #define STORM_DEBUG if (g_stormLevel <= Storm::LogLevel_Debug) \
 	Storm::LogStream("", Storm::LogType_Roll, Storm::LogLevel_Debug, true, __FILE__, __LINE__, __FUNCTION__).stream()
@@ -97,11 +109,6 @@ extern LogLevel g_stormLevel;
 
 #define HOUR_LOG(file) \
 	Storm::LogStream(file, Storm::LogType_Hour).stream()
-
-#define DAY_ERROR
-
-#define DAY_EXCEPTION
-	
 
 }
 

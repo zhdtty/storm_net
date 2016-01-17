@@ -264,6 +264,8 @@ LogLevel LogManager::parseLevel(const string& levelStr) {
 		level = LogLevel_Info;
 	} else if (s == "ERROR") {
 		level = LogLevel_Error;
+	} else if (s == "EXCEPTION") {
+		level = LogLevel_Exception;
 	} else if (s == "NONE") {
 		level = LogLevel_None;
 	}
@@ -361,7 +363,8 @@ void LogManager::startAsyncThread() {
 const char* g_logLevelName[LogLevel_None] = {
 	"DEBUG|",
 	"INFO|",
-	"ERROR|"
+	"ERROR|",
+	"EXCEPTION|"
 };
 
 __thread ostringstream* t_oss = NULL;
@@ -375,15 +378,22 @@ ostringstream& getOss() {
 	return *t_oss;
 }
 
+static void prepareTimeStr(uint32_t now) {
+	if (now != t_lastTime) {
+		struct tm tmnow;
+		time_t t = now;
+		localtime_r(&t, &tmnow);
+
+		strftime(t_timeStr, sizeof(t_timeStr), "%Y-%m-%d %H:%M:%S", &tmnow);
+
+		t_lastTime = now;
+	}
+}
+
 LogStream::LogStream(const string& logName, LogType logType)
 	:m_logName(logName), m_logType(logType) {
 
-#if USE_LOCAL_OSS
 	ostringstream& oss = getOss();
-#else
-	ostringstream& oss = m_oss;
-#endif
-
 	oss.clear();
 	oss.str("");
 	uint64_t nowUs = UtilTime::getNowUs();
@@ -393,7 +403,7 @@ LogStream::LogStream(const string& logName, LogType logType)
 	char buf[8];
 	snprintf(buf, sizeof(buf), ".%06d", us);
 
-	prepareTimeStr();
+	prepareTimeStr(m_logTime);
 	oss << t_timeStr << buf << "|";
 }
 
@@ -401,11 +411,7 @@ LogStream::LogStream(const string& logName, LogType logType, LogLevel logLevel, 
 					 const string& fileName, int line, const string& func)
 	:m_logName(logName), m_logType(logType) {
 
-#if USE_LOCAL_OSS
 	ostringstream& oss = getOss();
-#else
-	ostringstream& oss = m_oss;
-#endif
 	oss.clear();
 	oss.str("");
 	uint64_t nowUs = UtilTime::getNowUs();
@@ -415,7 +421,7 @@ LogStream::LogStream(const string& logName, LogType logType, LogLevel logLevel, 
 	char buf[8];
 	snprintf(buf, sizeof(buf), ".%06d", us);
 
-	prepareTimeStr();
+	prepareTimeStr(m_logTime);
 	oss << t_timeStr << buf << "|" << getThreadIdStr() << "|" << g_logLevelName[logLevel];
 	if (isFrameWork) {
 		oss << "[STORM]|";
@@ -423,24 +429,8 @@ LogStream::LogStream(const string& logName, LogType logType, LogLevel logLevel, 
 	oss << briefLogFileName(fileName.c_str()) << "(" << line << "):" << func << "|";
 }
 
-void LogStream::prepareTimeStr() {
-	if (m_logTime != t_lastTime) {
-		struct tm tmnow;
-		time_t t = m_logTime;
-		localtime_r(&t, &tmnow);
-
-		strftime(t_timeStr, sizeof(t_timeStr), "%Y-%m-%d %H:%M:%S", &tmnow);
-
-		t_lastTime = m_logTime;
-	}
-}
-
 LogStream::~LogStream() {
-#if USE_LOCAL_OSS
 	ostringstream& oss = getOss();
-#else
-	ostringstream& oss = m_oss;
-#endif
 	oss << endl;
 
 	LogData::ptr logData(new LogData());
@@ -453,11 +443,49 @@ LogStream::~LogStream() {
 }
 
 ostringstream& LogStream::stream() {
-#if USE_LOCAL_OSS
 	return getOss();
-#else
-	return m_oss;
-#endif
+}
+
+RollDayStream::RollDayStream(const string& logName, LogLevel logLevel, const string& fileName, int line, const string& func)
+	:m_logName(logName) {
+	ostringstream& oss = getOss();
+	oss.clear();
+	oss.str("");
+	uint64_t nowUs = UtilTime::getNowUs();
+	m_logTime = nowUs / MICROSEC_PER_SEC;
+
+	uint32_t us = nowUs % MICROSEC_PER_SEC;
+	char buf[8];
+	snprintf(buf, sizeof(buf), ".%06d", us);
+
+	prepareTimeStr(m_logTime);
+	oss << t_timeStr << buf << "|" << getThreadIdStr() << "|" << g_logLevelName[logLevel];
+	oss << briefLogFileName(fileName.c_str()) << "(" << line << "):" << func << "|";
+}
+
+RollDayStream::~RollDayStream() {
+	ostringstream& oss = getOss();
+	oss << endl;
+
+	//RollLog
+	LogData::ptr logData(new LogData());
+	logData->logTime = m_logTime;
+	logData->logName = string("");
+	logData->logType = LogType_Roll;
+	logData->content = oss.str();
+	LogManager::doLog(logData);
+
+	//DayLog
+	LogData::ptr logData2(new LogData());
+	logData2->logTime = m_logTime;
+	logData2->logName = m_logName;
+	logData2->logType = LogType_Day;
+	logData2->content = oss.str();
+	LogManager::doLog(logData2);
+}
+
+ostringstream& RollDayStream::stream() {
+	return getOss();
 }
 
 }
