@@ -102,6 +102,7 @@ int Application::run(int argc, char** argv) {
 			}
 		}
 
+		STORM_INFO << "server start";
 		while (!m_sockServer->isTerminate() && !m_connector->isTerminate()) {
 			if (g_exit) {
 				terminate();

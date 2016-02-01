@@ -21,3 +21,4 @@ add_library(${RPC_TARGET} OBJECT ${RPC_SRC})
 
 add_subdirectory(Server)
 add_subdirectory(Client)
+add_subdirectory(HttpServer)

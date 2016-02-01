@@ -13,7 +13,30 @@
 
 namespace Storm {
 
+const char* etos(Socket_CloseType closeType) {
+	switch (closeType) {
+		case CloseType_Server:
+			return "CloseType_Server";
+		case CloseType_Client:
+			return "CloseType_Client";
+		case CloseType_Timeout:
+			return "CloseType_Timeout";
+		case CloseType_EmptyTimeout:
+			return "CloseType_EmptyTimeout";
+		case CloseType_Packet_Error:
+			return "CloseType_Packet_Error";
+		case CloseType_ConnectFail:
+			return "CloseType_ConnectFail";
+	}
+	return "unknown";
+}
+
 SocketListener::SocketListener():m_handler(NULL), m_sockServer(NULL) {
+}
+
+void SocketListener::setHandle(SocketHandler* handler) {
+	m_handler = handler;
+	m_handler->setProtocol(std::bind(FrameProtocolLen::decode, std::placeholders::_1, std::placeholders::_2));
 }
 
 void SocketListener::setProtocol(ProtocolType protocol) {
@@ -119,7 +142,7 @@ void SocketHandler::doEmptyClose(uint32_t id) {
 }
 
 void SocketHandler::onAccept(int id, int fd, const string& ip, int port) {
-	STORM_INFO << m_config.serviceName << " accept " << id << " " << fd << " " << ip << " " << port;
+	STORM_INFO << m_config.serviceName << " accept " << id << " " << fd << " " << ip << ":" << port;
 	uint32_t now = UtilTime::getNow();
 	if (m_conList.size() >= m_config.maxConnections) {
 		STORM_ERROR << "max Connection";
@@ -130,8 +153,8 @@ void SocketHandler::onAccept(int id, int fd, const string& ip, int port) {
 }
 
 void SocketHandler::onClose(int id, int fd, const string& ip, int port, int closeType) {
-	STORM_INFO << m_config.serviceName << " close " << id << " " << fd << " " << ip << " " << port
-			   << ", close type " << closeType;
+	STORM_INFO << m_config.serviceName << " close " << id << " " << fd << " " << ip << ":" << port
+			   << ", " << etos((Socket_CloseType)closeType);
 	m_conList.del(id);
 	m_timelist.del(id);
 	Connection::ptr pack(new Connection);

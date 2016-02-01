@@ -341,7 +341,7 @@ static void logThreadEntry() {
 			if (g_logExit) {
 				break;
 			}
-			sleep(1);
+			usleep(10 * 1000);
 			continue;
 		}
 		for (auto l : allLogs) {

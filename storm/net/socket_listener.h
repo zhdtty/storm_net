@@ -39,19 +39,20 @@ public:
 	virtual bool initialize() {return true;}
 	virtual void destroy() {}
 
-	virtual void doClose(Connection::ptr pack) {}
+	virtual void doClose(Connection::ptr conn) {}
 
 	//自定义协议重载doRequest
-	virtual void doRequest(Connection::ptr pack);
+	virtual void doRequest(Connection::ptr conn);
 
 	//RPC协议重载doRpcRequest
-	virtual int doRpcRequest(Connection::ptr pack, const RpcRequest& req, RpcResponse& resp) {
+	virtual int doRpcRequest(Connection::ptr conn, const RpcRequest& req, RpcResponse& resp) {
 		return 0;
 	}
 
 	void send(int id, const string& str);
 	void send(int id, IOBuffer::ptr buffer);
 
+	virtual void setHandle(SocketHandler* handler);
 	void setProtocol(ProtocolType protocol);
 
 	void start();
@@ -124,7 +125,7 @@ bool SocketHandler::setListener(SocketServer* server, const ServiceConfig& confi
 	for (uint32_t i = 0; i < threadNum; ++i) {
 		SocketListener::ptr listener(new T());
 		listener->m_sockServer = server;
-		listener->m_handler = this;
+		listener->setHandle(this);
 		if (!listener->initialize()) {
 			return false;
 		}

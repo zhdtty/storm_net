@@ -1,5 +1,5 @@
-#ifndef _PROTOCOL_H_
-#define _PROTOCOL_H_
+#ifndef _STORM_PROTOCOL_H_
+#define _STORM_PROTOCOL_H_
 
 #include "common_header.h"
 #include "io_buffer.h"
@@ -66,6 +66,11 @@ public:
 
 		return Packet_Normal;
 	}
+};
+
+class FrameProtocolHttp {
+public:
+	static int decode(IOBuffer::ptr in, string& out);
 };
 
 }
