@@ -90,6 +90,7 @@ int Application::run(int argc, char** argv) {
 		m_sockServer->start();
 		greenOutput("start server success");
 		if (g_option.isDaemon()) {
+			cout << "daemon" << endl;
 			int fd = open("/dev/null", O_RDWR );
 			if (fd != -1) {
 				dup2(fd, 0);
